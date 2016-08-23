@@ -15,9 +15,50 @@
 
   <properties>
     <java.version>1.7</java.version>
+    <!-- CAMUNDA BEGIN -->
+    <camunda.version>7.5.0</camunda.version>
+    <spring.version>3.1.2.RELEASE</spring.version>
+    <!-- CAMUNDA END -->
   </properties>
 
+  <!-- CAMUNDA BEGIN -->
+  <!-- import Camunda BOM to ensure correct versions of Camunda projects -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.camunda.bpm</groupId>
+        <artifactId>camunda-bom</artifactId>
+        <version>${camunda.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <!-- CAMUNDA END -->
+
   <dependencies>
+  <!-- CAMUNDA BEGIN -->
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-engine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-engine-spring</artifactId>
+    </dependency>
+   <!--  <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>${spring.version}</version>
+    </dependency> -->
+    <!-- <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>1.3.171</version>
+    </dependency> -->
+
+    <!-- CAMUNDA END -->
+
     <dependency>
       <groupId>io.oasp.java.modules</groupId>
       <artifactId>oasp4j-batch</artifactId>
