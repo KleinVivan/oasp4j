@@ -43,7 +43,6 @@ public class CamundaProcessEngineConfiguration {
   @Bean
   public PlatformTransactionManager transactionManager() {
 
-    // return new DataSourceTransactionManager(dataSource());
     return new DataSourceTransactionManager(this.dataSource);
   }
 
@@ -52,7 +51,6 @@ public class CamundaProcessEngineConfiguration {
 
     SpringProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
 
-    // config.setDataSource(dataSource());
     config.setDataSource(this.dataSource);
     config.setTransactionManager(transactionManager());
 
