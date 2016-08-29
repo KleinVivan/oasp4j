@@ -5,6 +5,7 @@ import java.io.IOException;
 import javax.inject.Inject;
 import javax.sql.DataSource;
 
+import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
@@ -89,6 +90,12 @@ public class CamundaProcessEngineConfiguration {
   public TaskService taskService(ProcessEngine processEngine) {
 
     return processEngine.getTaskService();
+  }
+
+  @Bean
+  public HistoryService historyService(ProcessEngine processEngine) {
+
+    return processEngine.getHistoryService();
   }
 
   // more engine services and additional beans ...
