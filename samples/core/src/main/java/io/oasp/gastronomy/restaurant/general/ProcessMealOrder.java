@@ -1,9 +1,8 @@
 package io.oasp.gastronomy.restaurant.general;
 
-import javax.inject.Named;
-
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
+import org.springframework.stereotype.Component;
 
 /**
  * TODO VMUSCHTE This type ...
@@ -11,7 +10,7 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
  * @author VMUSCHTE
  */
 
-@Named
+@Component
 public class ProcessMealOrder implements JavaDelegate {
 
   @Override
@@ -19,12 +18,12 @@ public class ProcessMealOrder implements JavaDelegate {
 
     System.out.println("Spring Bean invoked.");
 
-    String orderID = (String) execution.getVariable("OrderID");
-    String customer = (String) execution.getVariable("Customer");
-
-    String message = "New Order with ID: " + orderID + ". Customer is " + customer + "!";
-    // execution.setVariable("message", message);
-    System.out.println(message);
+    // String orderID = (String) execution.getVariable("OrderID");
+    // String customer = (String) execution.getVariable("Customer");
+    //
+    // String message = "New Order with ID: " + orderID + ". Customer is " + customer + "!";
+    // // execution.setVariable("message", message);
+    // System.out.println(message);
   }
 
 }

@@ -1,5 +1,8 @@
 package io.oasp.gastronomy.restaurant;
 
+import static org.camunda.bpm.engine.test.assertions.ProcessEngineAssertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.FileInputStream;
@@ -12,6 +15,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,14 +36,11 @@ public class ProcessTestCase {// extends AbstractRestServiceTest {
 
   // private TablemanagementRestService service;
 
-  // @Inject
-  // private SpringProcessEngineConfiguration config;
+  private static final String BPMN_LOCATION = "./src/main/resources/processMealOrder.bpmn";
 
-  private static final String BPMN_LOCATION = "./src/main/resources/simple.bpmn";
+  private static final String BPMN_NAME = "processMealOrder.bpmn";
 
-  private static final String BPMN_NAME = "simple.bpmn";
-
-  private static final String PROCESS_KEY = "simple";
+  private static final String PROCESS_KEY = "processMealOrder";
 
   @Inject
   private RepositoryService repositoryService;
@@ -56,7 +57,7 @@ public class ProcessTestCase {// extends AbstractRestServiceTest {
 
     Deployment deployment = this.repositoryService.createDeployment()
         .addInputStream(BPMN_NAME, new FileInputStream(BPMN_LOCATION)).deploy();
-    // assertNotNull(deployment.getId());
+    assertNotNull(deployment.getId());
     assertTrue(this.repositoryService.getDeploymentResourceNames(deployment.getId()).contains(BPMN_NAME));
 
   }
@@ -85,16 +86,27 @@ public class ProcessTestCase {// extends AbstractRestServiceTest {
   // this.service = null;
   //
   // }
-  // @Deployment(resources = "processMealOrder.bpmn")
 
   @Test
-  // @Deployment(resources = "simple.bpmn")
   public void addTableToProcess() {
 
     // ProcessInstance processInstance =
-    // this.rule.getProcessEngine().getRuntimeService().startProcessInstanceByKey("simple");
+    // this.rule.getProcessEngine().getRuntimeService().startProcessInstanceByKey("processMealOrder");
 
     ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(PROCESS_KEY);
+
+    assertNotNull(processInstance);
+
+    assertThat(processInstance).hasPassed("ServiceTask_DoItAll");
+
+    Task task = this.taskService.createTaskQuery().singleResult();
+
+    // Task task = this.rule.getProcessEngine().getTaskService().createTaskQuery().singleResult();
+    assertNotNull(task);
+    assertEquals("Gericht servieren", task.getName());
+
+    // assertEquals("Bestellung bearbeiten", task.getName());
+    // assertEquals("ServiceTask_DoItAll", task.getId());
   }
 
 }
