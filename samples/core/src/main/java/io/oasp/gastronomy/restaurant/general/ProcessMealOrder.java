@@ -26,4 +26,26 @@ public class ProcessMealOrder implements JavaDelegate {
     // System.out.println(message);
   }
 
+  public String getTableId(DelegateExecution execution) {
+
+    String orderId = (String) execution.getVariable("orderId");
+
+    // get Table where oderId = orderId ...
+    String tableId = "102";
+
+    return tableId;
+  }
+
+  /**
+   * Dummy Method
+   *
+   * @return
+   */
+  public String dummyMethod() {
+
+    Mocky mockyDb = new Mocky();
+    String daten = mockyDb.getMockyData();
+    return daten + "Test";
+  }
+
 }
