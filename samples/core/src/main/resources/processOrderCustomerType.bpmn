@@ -57,6 +57,9 @@
     <bpmn:sequenceFlow id="SequenceFlow_1o79pcc" sourceRef="UserTask_deliverMeal" targetRef="gateway_join" />
     <bpmn:sequenceFlow id="SequenceFlow_1618gmk" sourceRef="UserTask_receiveOrder" targetRef="gateway_type" />
     <bpmn:userTask id="UserTask_receiveOrder" name="Bestellung aufnehmen" camunda:candidateGroups="waiter">
+      <bpmn:extensionElements>
+        <camunda:taskListener class="UserTaskListener" event="create" />
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_031myua</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1618gmk</bpmn:outgoing>
     </bpmn:userTask>
