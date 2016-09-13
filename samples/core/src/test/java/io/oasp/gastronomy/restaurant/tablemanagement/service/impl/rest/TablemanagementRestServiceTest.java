@@ -40,7 +40,7 @@ public class TablemanagementRestServiceTest extends AbstractRestServiceTest {
   public void init() {
 
     getDbTestHelper().resetDatabase();
-    this.service = getRestTestClientBuilder().build(TablemanagementRestService.class);
+    this.service = getRestTestClientBuilder().build(TablemanagementRestService.class, "waiter");
 
   }
 
@@ -66,7 +66,10 @@ public class TablemanagementRestServiceTest extends AbstractRestServiceTest {
     // when
 
     TableEto table = this.service.getTable(id);
-
+    TableEto eto = new TableEto();
+    eto.setState(TableState.FREE);
+    eto.setWaiterId(2L);
+    this.service.saveTable(eto);
     // then
     assertThat(table).isNotNull();
     assertThat(table.getId()).isEqualTo(id);

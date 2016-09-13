@@ -14,12 +14,12 @@ import javax.inject.Inject;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.assertions.ProcessEngineTests;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -105,7 +105,7 @@ public class PrototypeProcessTest extends AbstractRestServiceTest {
   }
 
   /**
-   * This test method checks the UserTaskListener
+   * This test method checks the functionality of UserTaskListener
    */
   @Test
   public void testUserTaskListener() {
@@ -129,7 +129,7 @@ public class PrototypeProcessTest extends AbstractRestServiceTest {
   }
 
   /**
-   * This method checks the complete method of the TaskController
+   * This method checks the complete method of the TaskController and the process variable that has been set
    */
   @Test
   public void testCompleteTask() {
@@ -137,9 +137,9 @@ public class PrototypeProcessTest extends AbstractRestServiceTest {
     // Given
     ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(PROCESS_KEY);
 
-    // mock/simulate UserTaskForm, where data is recorded and given to the process via submit button
+    // the decision will be made via UserTaskForm, where data is recorded and given to the process via submit button
     String variableName = "decision";
-    String variableValue = "birne";
+    String variableValue = "birne"; // birne oder apfel
 
     Task userTask = this.taskService.createTaskQuery().singleResult();
 
@@ -156,14 +156,19 @@ public class PrototypeProcessTest extends AbstractRestServiceTest {
       e.printStackTrace();
     }
 
-    // check if instance has passed UserTask and Gateway
+    // check if instance has passed UserTask
     ProcessEngineTests.assertThat(processInstance).hasPassed("UserTask_recordData");
 
-    ExecutionEntity executionEntity = (ExecutionEntity) this.runtimeService.createExecutionQuery().singleResult();
-    String executionId = executionEntity.getId();
-    Object processVariable = this.runtimeService.getVariable(executionId, "decision");
+    String queriedVariable =
+        (String) this.runtimeService.getVariable(processInstance.getProcessInstanceId(), "decision");
 
-    assertThat((String) processVariable).isEqualTo("apfel");
+    Assert.assertEquals(queriedVariable, variableValue);
+
+    System.out.println("ProcessInstanceId vom Typ Execution ist:" + processInstance.getProcessInstanceId());
+    System.out.println("Prozessvariable nach 'Daten erfassen'" + queriedVariable);
+
+    // check if instance has passed Decision Gateway
+    ProcessEngineTests.assertThat(processInstance).hasPassed("ExGate_decision");
 
   }
 
