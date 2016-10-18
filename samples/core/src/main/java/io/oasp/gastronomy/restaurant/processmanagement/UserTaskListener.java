@@ -16,7 +16,7 @@ public class UserTaskListener implements TaskListener {
 
     // logic for create, assign, complete, delete events goes here, e.g. setDueDate()
 
-    delegateTask.setAssignee("Dummy User");
+    delegateTask.setAssignee("User Name");
     System.out.println("Set assignee in TaskListener!");
 
   }
