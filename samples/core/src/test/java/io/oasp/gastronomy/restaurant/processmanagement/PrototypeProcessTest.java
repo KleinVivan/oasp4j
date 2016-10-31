@@ -11,6 +11,7 @@ import java.io.IOException;
 
 import javax.inject.Inject;
 
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
@@ -29,7 +30,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import io.oasp.gastronomy.restaurant.SpringBootApp;
 import io.oasp.gastronomy.restaurant.general.common.base.AbstractRestServiceTest;
-import io.oasp.gastronomy.restaurant.processmanagement.UserTaskController;
 import io.oasp.gastronomy.restaurant.tablemanagement.service.api.rest.TablemanagementRestService;
 
 /**
@@ -46,11 +46,14 @@ public class PrototypeProcessTest extends AbstractRestServiceTest {
 
   private TablemanagementRestService service;
 
-  private static final String BPMN_LOCATION = "./src/main/resources/prototypeProcess.bpmn";
+  private static final String BPMN_LOCATION = "./src/main/resources/processes/prototypeProcess.bpmn";
 
   private static final String BPMN_NAME = "prototypeProcess.bpmn";
 
   private static final String PROCESS_KEY = "prototypeProcess";
+
+  @Inject
+  private ProcessEngine processEngine;
 
   @Inject
   private RepositoryService repositoryService;

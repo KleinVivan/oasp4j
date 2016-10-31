@@ -1,6 +1,13 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
-import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.OrderProcessState;
+import javax.inject.Inject;
+
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.springframework.stereotype.Component;
+
+import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
 import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
 
 /**
@@ -9,27 +16,21 @@ import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanageme
  * @author VMUSCHTE
  * @since dev
  */
+@Component
 public class ProcessmanagementImpl implements Processmanagement {
 
-  @Override
-  public boolean startProcess(Long orderProcessId) {
+  @Inject
+  private ProcessEngine processEngine;
 
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public boolean stopProcess(Long orderProcessId) {
-
-    // TODO Auto-generated method stub
-    return false;
-  }
+  @Inject
+  private RuntimeService runtimeService;
 
   @Override
-  public OrderProcessState getOrderProcessState(Long orderProcessId) {
+  public void startProcess(ProcessKeyName processKeyName, Long orderId) {
 
-    // TODO Auto-generated method stub
-    return null;
+    ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(processKeyName.getKeyName());
+    processInstance.getId();
+
   }
 
 }

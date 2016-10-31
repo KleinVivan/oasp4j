@@ -1,19 +1,5 @@
 package io.oasp.gastronomy.restaurant.salesmanagement.logic.impl.usecase;
 
-import io.oasp.gastronomy.restaurant.general.common.api.constants.PermissionConstants;
-import io.oasp.gastronomy.restaurant.general.common.api.exception.IllegalEntityStateException;
-import io.oasp.gastronomy.restaurant.general.logic.api.UseCase;
-import io.oasp.gastronomy.restaurant.salesmanagement.common.api.Order;
-import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
-import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderState;
-import io.oasp.gastronomy.restaurant.salesmanagement.dataaccess.api.OrderEntity;
-import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
-import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderCto;
-import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
-import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
-import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.usecase.UcManageOrder;
-import io.oasp.gastronomy.restaurant.salesmanagement.logic.base.usecase.AbstractOrderUc;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +13,22 @@ import net.sf.mmm.util.exception.api.ObjectMismatchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
+
+import io.oasp.gastronomy.restaurant.general.common.api.constants.PermissionConstants;
+import io.oasp.gastronomy.restaurant.general.common.api.exception.IllegalEntityStateException;
+import io.oasp.gastronomy.restaurant.general.logic.api.UseCase;
+import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
+import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
+import io.oasp.gastronomy.restaurant.salesmanagement.common.api.Order;
+import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
+import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderState;
+import io.oasp.gastronomy.restaurant.salesmanagement.dataaccess.api.OrderEntity;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderCto;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.usecase.UcManageOrder;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.base.usecase.AbstractOrderUc;
 
 /**
  * Implementation of {@link UcManageOrder}.
@@ -43,6 +45,8 @@ public class UcManageOrderImpl extends AbstractOrderUc implements UcManageOrder 
 
   private Salesmanagement salesmanagement;
 
+  private Processmanagement processmanagement;
+
   /**
    * The constructor.
    */
@@ -58,6 +62,15 @@ public class UcManageOrderImpl extends AbstractOrderUc implements UcManageOrder 
   public void setSalesmanagement(Salesmanagement salesmanagement) {
 
     this.salesmanagement = salesmanagement;
+  }
+
+  /**
+   * @param processmanagement the {@link Processmanagement} to {@link Inject}.
+   */
+  @Inject
+  public void setProcessmanagement(Processmanagement processmanagement) {
+
+    this.processmanagement = processmanagement;
   }
 
   @Override
@@ -83,6 +96,11 @@ public class UcManageOrderImpl extends AbstractOrderUc implements UcManageOrder 
     OrderEntity orderEntity = getBeanMapper().map(order, OrderEntity.class);
     orderEntity = getOrderDao().save(orderEntity);
     LOG.debug("Saved order with id {}.", orderEntity.getId());
+
+    // TODO: Doku
+    this.processmanagement.startProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId);
+    //
+
     return getBeanMapper().map(orderEntity, OrderEto.class);
   }
 
