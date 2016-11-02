@@ -7,7 +7,8 @@ package io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype;
  * @since dev
  */
 public enum ProcessTasks {
-  USERTASK_ACCEPTORDER("UserTask_acceptOrder"), USERTASK_SERVEORDER("UserTask_ServeOrder");
+  USERTASK_ACCEPTORDER("UserTask_acceptOrder"), USERTASK_UPDATEPREPAREDORDER(
+      "UserTask_UpdatePreparedOrder"), USERTASK_UPDATESERVEDORDER("UserTask_UpdateServedOrder");
 
   private final String taskName;
 

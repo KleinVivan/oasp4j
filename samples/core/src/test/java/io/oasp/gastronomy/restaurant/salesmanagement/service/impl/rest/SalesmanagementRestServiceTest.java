@@ -84,8 +84,8 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
   public void findOrder() {
 
     // given
-    OrderCto sampleOrderCto = this.helper.createSampleOrderCto(SAMPLE_TABLE_ID);
-    OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
+    OrderCto sampleOrderCto = getSampleOrder();
+    OrderCto responseOrderCto = getSavedOrder(sampleOrderCto);
     assertThat(responseOrderCto).isNotNull();
 
     // when
@@ -95,6 +95,15 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
     assertThat(responseOrderEto).isNotNull();
     assertThat(responseOrderEto.getId()).isEqualTo(responseOrderCto.getOrder().getId());
     assertThat(responseOrderEto.getTableId()).isEqualTo(SAMPLE_TABLE_ID);
+  }
+
+  /**
+   * @return
+   */
+  public OrderCto getSampleOrder() {
+
+    OrderCto sampleOrderCto = this.helper.createSampleOrderCto(SAMPLE_TABLE_ID);
+    return sampleOrderCto;
   }
 
   /**
@@ -155,9 +164,8 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
   @Test
   public void findOrderByPost() {
 
-    // given
-    OrderCto sampleOrderCto = this.helper.createSampleOrderCto(SAMPLE_TABLE_ID);
-    OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
+    OrderCto sampleOrderCto = getSampleOrder();
+    OrderCto responseOrderCto = getSavedOrder(sampleOrderCto);
     assertThat(responseOrderCto).isNotNull();
 
     OrderSearchCriteriaTo criteria = new OrderSearchCriteriaTo();
@@ -187,9 +195,8 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
   @Test
   public void findOrderPosition() {
 
-    // given
-    OrderCto sampleOrderCto = this.helper.createSampleOrderCto(SAMPLE_TABLE_ID);
-    OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
+    OrderCto sampleOrderCto = getSampleOrder();
+    OrderCto responseOrderCto = getSavedOrder(sampleOrderCto);
     assertThat(responseOrderCto).isNotNull();
 
     OrderPositionEto sampleOrderPositionEto =
@@ -222,9 +229,8 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
   @Test
   public void findAllOrderPositions() {
 
-    // given
-    OrderCto sampleOrderCto = this.helper.createSampleOrderCto(SAMPLE_TABLE_ID);
-    OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
+    OrderCto sampleOrderCto = getSampleOrder();
+    OrderCto responseOrderCto = getSavedOrder(sampleOrderCto);
     assertThat(responseOrderCto).isNotNull();
 
     int oldNumberOfOrderPositions = getNumberOfOrderPositions();
@@ -280,9 +286,8 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
   @Test
   public void cancelOrderPosition() {
 
-    // given
-    OrderCto sampleOrderCto = this.helper.createSampleOrderCto(SAMPLE_TABLE_ID);
-    OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
+    OrderCto sampleOrderCto = getSampleOrder();
+    OrderCto responseOrderCto = getSavedOrder(sampleOrderCto);
     assertThat(responseOrderCto).isNotNull();
 
     OrderPositionEto sampleOrderPositionEto =
@@ -301,6 +306,16 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
     responseOrderPositionEto = this.service.findOrderPosition(responseOrderPositionEto.getId());
     assertThat(responseOrderPositionEto.getState()).isEqualTo(OrderPositionState.CANCELLED);
     assertThat(responseOrderCto.getOrder().getId()).isEqualTo(sampleOrderCto.getOrder().getId());
+  }
+
+  /**
+   * @param sampleOrderCto
+   * @return
+   */
+  public OrderCto getSavedOrder(OrderCto sampleOrderCto) {
+
+    OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
+    return responseOrderCto;
   }
 
   /**

@@ -69,9 +69,6 @@ public class PrototypeProcessTest extends AbstractRestServiceTest {
 
   // @Inject
   // private ProcessMealOrder processMealOrder;
-  //
-  // @Mock
-  // private Mocky mocky;
 
   /**
    * Load and deploy the BPMN model - alternative to @Deploy annotation

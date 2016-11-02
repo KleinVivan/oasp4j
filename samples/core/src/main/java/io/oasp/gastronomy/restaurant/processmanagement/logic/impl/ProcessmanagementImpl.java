@@ -1,5 +1,8 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.inject.Inject;
 
 import org.camunda.bpm.engine.ProcessEngine;
@@ -28,8 +31,13 @@ public class ProcessmanagementImpl implements Processmanagement {
   @Override
   public void startProcess(ProcessKeyName processKeyName, Long orderId) {
 
-    ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(processKeyName.getKeyName());
-    processInstance.getId();
+    Map<String, Object> variables = new HashMap<String, Object>();
+    variables.put("orderId", orderId);
+
+    ProcessInstance processInstance =
+        this.runtimeService.startProcessInstanceByKey(processKeyName.getKeyName(), variables);
+
+    System.out.println(processInstance.getProcessInstanceId());
 
   }
 
