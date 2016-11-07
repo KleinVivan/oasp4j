@@ -101,6 +101,12 @@ public class SalesmanagementImpl extends AbstractComponentFacade implements Sale
     this.ucFindOrder = ucFindOrder;
   }
 
+  @Override
+  public OrderEto saveOrder(OrderEto order) {
+  
+    return this.ucManageOrder.saveOrder(order);
+  }
+
   /**
    * @param ucManageOrder the {@link UcManageOrder} to {@link Inject}.
    */
@@ -231,12 +237,6 @@ public class SalesmanagementImpl extends AbstractComponentFacade implements Sale
 
   @Override
   public OrderCto saveOrder(OrderCto order) {
-
-    return this.ucManageOrder.saveOrder(order);
-  }
-
-  @Override
-  public OrderEto saveOrder(OrderEto order) {
 
     return this.ucManageOrder.saveOrder(order);
   }

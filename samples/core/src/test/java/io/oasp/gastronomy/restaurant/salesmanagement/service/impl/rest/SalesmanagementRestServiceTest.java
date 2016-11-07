@@ -62,7 +62,7 @@ public class SalesmanagementRestServiceTest extends AbstractRestServiceTest {
   @Before
   public void init() {
 
-    getDbTestHelper().resetDatabase();
+    // getDbTestHelper().resetDatabase();
     this.service = getRestTestClientBuilder().build(SalesmanagementRestService.class);
   }
 

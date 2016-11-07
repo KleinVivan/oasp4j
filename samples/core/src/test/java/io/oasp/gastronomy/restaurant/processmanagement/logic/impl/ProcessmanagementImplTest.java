@@ -68,7 +68,8 @@ public class ProcessmanagementImplTest extends AbstractRestServiceTest {
   @Before
   public void init() throws FileNotFoundException {
 
-    this.service = getRestTestClientBuilder().build(SalesmanagementRestService.class);
+    // this.service = getRestTestClientBuilder().build(SalesmanagementRestService.class);
+    this.salesmanagementRestServiceTest = new SalesmanagementRestServiceTest();
 
     Deployment deployment = this.repositoryService.createDeployment()
         .addInputStream(BPMN_NAME, new FileInputStream(BPMN_LOCATION)).deploy();

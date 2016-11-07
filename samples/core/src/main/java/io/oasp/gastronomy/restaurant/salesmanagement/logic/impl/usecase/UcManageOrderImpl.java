@@ -17,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import io.oasp.gastronomy.restaurant.general.common.api.constants.PermissionConstants;
 import io.oasp.gastronomy.restaurant.general.common.api.exception.IllegalEntityStateException;
 import io.oasp.gastronomy.restaurant.general.logic.api.UseCase;
-import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
 import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.Order;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
@@ -98,7 +97,7 @@ public class UcManageOrderImpl extends AbstractOrderUc implements UcManageOrder 
     LOG.debug("Saved order with id {}.", orderEntity.getId());
 
     // TODO: Doku
-    this.processmanagement.startProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId);
+    // this.processmanagement.startProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId);
     //
 
     return getBeanMapper().map(orderEntity, OrderEto.class);

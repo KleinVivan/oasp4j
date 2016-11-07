@@ -100,6 +100,9 @@ public abstract class BaseWebSecurityConfig extends WebSecurityConfigurerAdapter
     if (this.corsEnabled) {
       http.addFilterBefore(getCorsFilter(), CsrfFilter.class);
     }
+
+    // http.csrf().disable();
+    // http.headers().frameOptions().disable();
   }
 
   /**
