@@ -106,7 +106,11 @@ public class ProcessmanagementImplTest extends AbstractRestServiceTest {
     // OrderCto responseOrderCto = this.service.saveOrder(sampleOrderCto);
     assertThat(responseOrderCto).isNotNull();
 
-    ProcessInstance processInstance = (ProcessInstance) this.runtimeService.createExecutionQuery().singleResult();
+    // ProcessInstance processInstance = (ProcessInstance) this.runtimeService.createExecutionQuery().singleResult();
+
+    // TODO Prozessvariablen als Konstanten
+    ProcessInstance processInstance = (ProcessInstance) this.runtimeService.createProcessInstanceQuery()
+        .variableValueEquals("orderId", responseOrderCto.getOrder().getId());
     assertNotNull(processInstance);
     // String processInstanceID = this.runtimeService.createExecutionQuery().singleResult().getProcessInstanceId();
 

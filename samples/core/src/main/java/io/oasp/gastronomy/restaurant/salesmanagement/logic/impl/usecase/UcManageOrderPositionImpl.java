@@ -1,5 +1,7 @@
 package io.oasp.gastronomy.restaurant.salesmanagement.logic.impl.usecase;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.security.RolesAllowed;
@@ -8,6 +10,7 @@ import javax.inject.Named;
 
 import net.sf.mmm.util.exception.api.ObjectNotFoundUserException;
 
+import org.camunda.bpm.engine.RuntimeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +22,7 @@ import io.oasp.gastronomy.restaurant.general.logic.api.UseCase;
 import io.oasp.gastronomy.restaurant.offermanagement.common.api.Offer;
 import io.oasp.gastronomy.restaurant.offermanagement.logic.api.Offermanagement;
 import io.oasp.gastronomy.restaurant.offermanagement.logic.api.to.OfferEto;
+import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderState;
@@ -47,6 +51,10 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
   private Salesmanagement salesManagement;
 
   private Offermanagement offerManagement;
+
+  private Processmanagement processmanagement;
+
+  private RuntimeService runtimeService;
 
   /**
    * The constructor.
@@ -109,6 +117,20 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
     OrderPositionEntity orderPositionEntity = getBeanMapper().map(orderPosition, OrderPositionEntity.class);
     orderPositionEntity = getOrderPositionDao().save(orderPositionEntity);
     LOG.debug("The order position with id {} has been {}.", orderPositionEntity.getId(), action);
+
+    // TODO: Doku
+    Map<String, Object> variables = new HashMap<String, Object>();
+    variables.put("orderId", orderPositionEntity.getOrderId());
+    variables.put("orderPositionId", orderPositionEntity.getId());
+
+    // ProcessInstance processInstance =
+    // this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
+    // String processID = processInstance.getId();
+
+    // this.processmanagement.startProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderPositionEntity.getOrderId(),
+    // orderPositionEntity.getId());
+    //
+
     return getBeanMapper().map(orderPositionEntity, OrderPositionEto.class);
   }
 
@@ -245,6 +267,24 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
   public void setOfferManagement(Offermanagement offerManagement) {
 
     this.offerManagement = offerManagement;
+  }
+
+  /**
+   * @param processmanagement the {@link Processmanagement} to {@link Inject}.
+   */
+  @Inject
+  public void setProcessmanagement(Processmanagement processmanagement) {
+
+    this.processmanagement = processmanagement;
+  }
+
+  /**
+   * @param runtimeService new value of {@link #getruntimeService}.
+   */
+  @Inject
+  public void setRuntimeService(RuntimeService runtimeService) {
+
+    this.runtimeService = runtimeService;
   }
 
 }

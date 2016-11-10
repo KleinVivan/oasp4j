@@ -14,7 +14,8 @@ public enum OrderPositionState {
   ORDERED,
 
   /**
-   * The initial state of an {@link io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition}.
+   * The state of an {@link io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition} that has been
+   * assigned to a cook for preparation.
    */
   ASSIGNED,
 
@@ -26,7 +27,7 @@ public enum OrderPositionState {
 
   /**
    * The state of an {@link io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition} that has been
-   * delivered been delivered to the table by the waiter.
+   * delivered to the table by the waiter.
    */
   DELIVERED,
 

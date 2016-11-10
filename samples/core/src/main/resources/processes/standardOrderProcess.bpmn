@@ -10,9 +10,10 @@
         <bpmn:flowNodeRef>InterEvent_OrderPrepared</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>UserTask_UpdateServedOrder</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>InterEvent_BillDemanded</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>UserTask_CloseOrder</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>EndEvent_OrderClosed</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ServiceTask_CalculateBill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_OrderClosed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_CloseOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_ConfirmPayment</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_Cook" name="cook">
         <bpmn:flowNodeRef>UserTask_AcceptOrder</bpmn:flowNodeRef>
@@ -21,7 +22,7 @@
     </bpmn:laneSet>
     <bpmn:sequenceFlow id="SequenceFlow_0fhk1fv" sourceRef="StartEvent_OrderSaved" targetRef="UserTask_AcceptOrder" />
     <bpmn:sequenceFlow id="SequenceFlow_1dsms55" sourceRef="UserTask_CloseOrder" targetRef="EndEvent_OrderClosed" />
-    <bpmn:sequenceFlow id="SequenceFlow_06kjmb3" sourceRef="ServiceTask_CalculateBill" targetRef="UserTask_CloseOrder" />
+    <bpmn:sequenceFlow id="SequenceFlow_06kjmb3" sourceRef="ServiceTask_CalculateBill" targetRef="UserTask_ConfirmPayment" />
     <bpmn:sequenceFlow id="SequenceFlow_089ef4u" sourceRef="InterEvent_BillDemanded" targetRef="ServiceTask_CalculateBill" />
     <bpmn:sequenceFlow id="SequenceFlow_02mlw9s" sourceRef="UserTask_UpdateServedOrder" targetRef="InterEvent_BillDemanded" />
     <bpmn:sequenceFlow id="SequenceFlow_0xz10ev" sourceRef="InterEvent_OrderPrepared" targetRef="UserTask_UpdateServedOrder" />
@@ -48,13 +49,6 @@
       <bpmn:outgoing>SequenceFlow_089ef4u</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_0y8w2rp" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:userTask id="UserTask_CloseOrder" name="Close order" camunda:candidateGroups="waiter">
-      <bpmn:incoming>SequenceFlow_06kjmb3</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_1dsms55</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:endEvent id="EndEvent_OrderClosed" name="Order closed">
-      <bpmn:incoming>SequenceFlow_1dsms55</bpmn:incoming>
-    </bpmn:endEvent>
     <bpmn:serviceTask id="ServiceTask_CalculateBill" name="Calculate Bill&#10;" camunda:delegateExpression="${executeServiceTask}">
       <bpmn:incoming>SequenceFlow_089ef4u</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06kjmb3</bpmn:outgoing>
@@ -62,6 +56,18 @@
     <bpmn:userTask id="UserTask_UpdatePreparedOrder" name="Update prepared order">
       <bpmn:incoming>SequenceFlow_0tirrsq</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1kcm47h</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_OrderClosed" name="Order closed">
+      <bpmn:incoming>SequenceFlow_1dsms55</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="UserTask_CloseOrder" name="Close order" camunda:candidateGroups="waiter">
+      <bpmn:incoming>SequenceFlow_0h5dyau</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1dsms55</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0h5dyau" sourceRef="UserTask_ConfirmPayment" targetRef="UserTask_CloseOrder" />
+    <bpmn:userTask id="UserTask_ConfirmPayment" name="Receive and confirm payment">
+      <bpmn:incoming>SequenceFlow_06kjmb3</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0h5dyau</bpmn:outgoing>
     </bpmn:userTask>
   </bpmn:process>
   <bpmn:message id="Message_1ohxrp7" name="Message_0l6solu" />
@@ -71,12 +77,12 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="TechnicalStandardOrderProcess">
       <bpmndi:BPMNShape id="Participant_0ebcuxx_di" bpmnElement="Participant_Engine">
-        <dc:Bounds x="-252" y="481" width="1382" height="233" />
+        <dc:Bounds x="-252" y="481" width="1510" height="236" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_0dqce04_di" bpmnElement="EndEvent_OrderClosed">
-        <dc:Bounds x="1025" y="523" width="36" height="36" />
+        <dc:Bounds x="1161" y="523" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="998" y="559" width="90" height="24" />
+          <dc:Bounds x="1134" y="559" width="90" height="24" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0fhk1fv_di" bpmnElement="SequenceFlow_0fhk1fv">
@@ -89,22 +95,18 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="UserTask_0g5avin_di" bpmnElement="UserTask_CloseOrder">
-        <dc:Bounds x="853" y="501" width="100" height="80" />
+        <dc:Bounds x="985" y="501" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1dsms55_di" bpmnElement="SequenceFlow_1dsms55">
-        <di:waypoint xsi:type="dc:Point" x="953" y="541" />
-        <di:waypoint xsi:type="dc:Point" x="994" y="541" />
-        <di:waypoint xsi:type="dc:Point" x="994" y="541" />
-        <di:waypoint xsi:type="dc:Point" x="1025" y="541" />
+        <di:waypoint xsi:type="dc:Point" x="1085" y="541" />
+        <di:waypoint xsi:type="dc:Point" x="1161" y="541" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="967" y="429" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_06kjmb3_di" bpmnElement="SequenceFlow_06kjmb3">
         <di:waypoint xsi:type="dc:Point" x="774" y="541" />
-        <di:waypoint xsi:type="dc:Point" x="813" y="541" />
-        <di:waypoint xsi:type="dc:Point" x="813" y="541" />
-        <di:waypoint xsi:type="dc:Point" x="853" y="541" />
+        <di:waypoint xsi:type="dc:Point" x="826" y="541" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="782" y="429" width="90" height="0" />
         </bpmndi:BPMNLabel>
@@ -173,16 +175,26 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Lane_1dzjkpn_di" bpmnElement="Lane_Waiter">
-        <dc:Bounds x="-222" y="481" width="1352" height="119" />
+        <dc:Bounds x="-222" y="481" width="1480" height="119" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_0x75018_di" bpmnElement="Lane_Cook">
-        <dc:Bounds x="-222" y="600" width="1352" height="114" />
+        <dc:Bounds x="-222" y="600" width="1480" height="117" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_02mib1s_di" bpmnElement="ServiceTask_CalculateBill">
         <dc:Bounds x="674" y="501" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="UserTask_1jk1rnm_di" bpmnElement="UserTask_UpdatePreparedOrder">
         <dc:Bounds x="89" y="617" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0h5dyau_di" bpmnElement="SequenceFlow_0h5dyau">
+        <di:waypoint xsi:type="dc:Point" x="926" y="541" />
+        <di:waypoint xsi:type="dc:Point" x="985" y="541" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="910.5" y="516" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_0dbud4q_di" bpmnElement="UserTask_ConfirmPayment">
+        <dc:Bounds x="826" y="501" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

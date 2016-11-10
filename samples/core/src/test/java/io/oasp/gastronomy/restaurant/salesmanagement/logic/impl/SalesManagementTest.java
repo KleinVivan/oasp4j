@@ -48,7 +48,7 @@ public class SalesManagementTest extends ComponentTest {
     TestUtil.login("waiter", PermissionConstants.FIND_ORDER_POSITION, PermissionConstants.SAVE_ORDER_POSITION,
         PermissionConstants.SAVE_ORDER, PermissionConstants.FIND_OFFER);
     this.dbTestHelper.setMigrationVersion("0002");
-    this.dbTestHelper.resetDatabase();
+    // this.dbTestHelper.resetDatabase();
   }
 
   /**
