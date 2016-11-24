@@ -1,6 +1,8 @@
 package io.oasp.gastronomy.restaurant.salesmanagement.logic.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
@@ -9,8 +11,8 @@ import javax.validation.ConstraintViolationException;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.test.assertions.ProcessEngineTests;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +27,8 @@ import io.oasp.gastronomy.restaurant.general.common.TestUtil;
 import io.oasp.gastronomy.restaurant.general.common.api.constants.PermissionConstants;
 import io.oasp.gastronomy.restaurant.general.common.api.datatype.Money;
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
+import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessTasks;
+import io.oasp.gastronomy.restaurant.processmanagement.logic.impl.OrderProcessmanagementImpl;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.ProductOrderState;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
@@ -48,10 +52,24 @@ public class SalesManagementTest extends ComponentTest {
   private DbTestHelper dbTestHelper;
 
   @Inject
-  private RuntimeService runtimeservice;
+  private RuntimeService runtimeService;
 
   @Inject
-  private ProcessEngine processengine;
+  private RepositoryService repositoryService;
+
+  @Inject
+  private ProcessEngine processEngine;
+
+  private OrderProcessmanagementImpl orderProcessmanagement;
+
+  /**
+   * @param orderProcessmanagement new value of {@link Inject}.
+   */
+  @Inject
+  public void setOrderProcessmanagement(OrderProcessmanagementImpl orderProcessmanagement) {
+
+    this.orderProcessmanagement = orderProcessmanagement;
+  }
 
   /**
    * Initialization for the test.
@@ -63,6 +81,13 @@ public class SalesManagementTest extends ComponentTest {
         PermissionConstants.SAVE_ORDER, PermissionConstants.FIND_OFFER);
     this.dbTestHelper.setMigrationVersion("0002");
     // this.dbTestHelper.resetDatabase();
+
+    // start a first instance of a standard_order_process
+    Map<String, Object> variables = new HashMap<String, Object>();
+    variables.put("orderId", 2L);
+    variables.put("orderPositionId", 999L);
+    ProcessInstance processInstance =
+        this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
   }
 
   /**
@@ -75,7 +100,7 @@ public class SalesManagementTest extends ComponentTest {
   }
 
   @Test
-  public void testOrderProcessStart() {
+  public void testStartOrderProcess() {
 
     try {
       // given
@@ -86,23 +111,55 @@ public class SalesManagementTest extends ComponentTest {
       orderPosition = this.salesManagement.saveOrderPosition(orderPosition);
       assertThat(orderPosition).isNotNull();
 
-      // get process engine and services
-      RepositoryService repositoryService = this.processengine.getRepositoryService();
+      String pI = this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, order.getId(),
+          orderPosition.getId());
+      assertThat(pI).isNotNull();
 
-      // query for latest process definition with given name
-      ProcessDefinition myProcessDefinition = repositoryService.createProcessDefinitionQuery()
-          .processDefinitionName(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName()).latestVersion().singleResult();
+      String getPI = this.orderProcessmanagement.getOrderProcess(order.getId(), orderPosition.getId());
+      assertThat(getPI).isNotNull();
+      assertThat(pI).isEqualTo(getPI);
 
-      // list all running/unsuspended instances of the process
-      List<ProcessInstance> processInstances =
-          this.runtimeservice.createProcessInstanceQuery().processDefinitionId(myProcessDefinition.getId()).list();
+      ProcessEngineTests
+          .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI).singleResult())
+          .isStarted().isWaitingAt("UserTask_AcceptOrder");
+      this.orderProcessmanagement.setAssigneeToTask("Carl Cook", order.getId(), orderPosition.getId());
 
-      int size = processInstances.size();
-      assertThat(size).isGreaterThan(0);
+      ProcessEngineTests
+          .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI).singleResult())
+          .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName()).task().isAssignedTo("Carl Cook");
 
-      for (int i = 0; i < size; i++) {
-        // get single process Instance and select that one with right orderId and orderPositionId
+      // list all process instances
+      List<ProcessInstance> processInstances = this.runtimeService.createProcessInstanceQuery().list();
+      assertThat(processInstances.size()).isGreaterThan(0);
+
+      // list all process instances with specific oderId, because we cannot query more than one key value pair
+      processInstances =
+          this.runtimeService.createProcessInstanceQuery().variableValueEquals("orderId", order.getId()).list();
+      assertThat(processInstances.size()).isGreaterThan(0);
+
+      Long processOrderPosition = null;
+      ProcessInstance rightInstance = null;
+
+      for (int i = 0; i < processInstances.size(); i++) {
+        System.out.println("Process Instance: " + processInstances.get(i).getProcessInstanceId());
+
+        processOrderPosition =
+            (Long) this.runtimeService.getVariable(processInstances.get(i).getId(), "orderPositionId");
+        System.out.println("Orderposition: " + processOrderPosition);
+        if (processOrderPosition == orderPosition.getId()) {
+          rightInstance = processInstances.get(i);
+        }
       }
+
+      assertThat(rightInstance).isNotNull();
+      // ProcessEngineTests.assertThat(rightInstance).isStarted()
+      // .isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+      // ProcessEngineTests.assertThat(this.runtimeService.getVariable(rightInstance.getId(), "orderProcessState"))
+      // .isEqualTo(OrderPositionState.ORDERED);
+
+      // // ProcessInstance pi =
+      // // this.runtimeservice.createProcessInstanceQuery().variableValueEquals("orderId", 2L).singleResult();
+      // assertThat(rightInstance).isNotNull();
 
       // ProcessInstance pi = this.runtimeservice.createProcessInstanceQuery().variableValueEquals("orderId", 2L)
       // .variableValueEquals("oderPositionId", 1L).singleResult();
@@ -137,6 +194,7 @@ public class SalesManagementTest extends ComponentTest {
       // given
       OrderEto order = new OrderEtoBuilder().tableId(1L).createNew();
       order = this.salesManagement.saveOrder(order);
+      Long orderId = order.getId();
       OrderPositionEto orderPosition = new OrderPositionEtoBuilder().offerId(5L).orderId(order.getId())
           .offerName("Cola").price(new Money(1.2)).createNew();
       orderPosition = this.salesManagement.saveOrderPosition(orderPosition);

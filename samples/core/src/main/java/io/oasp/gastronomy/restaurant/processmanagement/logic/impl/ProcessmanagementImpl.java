@@ -1,11 +1,10 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
@@ -19,23 +18,83 @@ import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanageme
  * @since dev
  */
 @Component
-public class ProcessmanagementImpl implements Processmanagement {
+abstract class ProcessmanagementImpl implements Processmanagement {
 
   @Inject
-  private RuntimeService runtimeService;
+  protected ProcessEngine processEngine;
+  // private Map<String, ProcessEngine> processEngines = ProcessEngines.getProcessEngines();
 
   @Override
-  public void startProcess(ProcessKeyName processKeyName, Long orderId, Long orderPositionId) {
+  public String startProcess(String processEngineKey, ProcessKeyName processKeyName, Map<String, Object> variables) {
 
-    Map<String, Object> variables = new HashMap<String, Object>();
-    variables.put("orderId", orderId);
-
-    // ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(processKeyName.getKeyName());
+    // System.out.println("Prozessengines Anzahl " + this.processEngines.size());
+    // ProcessInstance processInstance = this.processEngines.get(processEngineKey).getRuntimeService()
+    // .startProcessInstanceByKey(processKeyName.getKeyName(), variables);
     ProcessInstance processInstance =
-        this.runtimeService.startProcessInstanceByKey(processKeyName.getKeyName(), variables);
-
-    // neue Entity
-
+        this.processEngine.getRuntimeService().startProcessInstanceByKey(processKeyName.getKeyName(), variables);
+    // VariableInstance varInst = this.processEngine.getRuntimeService().createVariableInstanceQuery()
+    // .variableValueEquals("orderId", variables.get("orderId"))
+    // .variableValueEquals("orderPositionId", variables.get("orderPositionId")).singleResult();
+    return processInstance.getProcessInstanceId();
   }
+
+  //
+  // /*
+  // * save order via salesmanagement and start process afterwards therefore must remove the start of a process from
+  // * saveOrderPosition in UcManageOrderPosition!
+  // */
+  // @Override
+  // public void startOrderProcess(OrderEto order, OrderPositionEto orderPosition) {
+  //
+  // // OrderEto order = null;
+  // // OrderPositionEto orderPosition = null;
+  // this.salesManagement.saveOrder(order);
+  // this.salesManagement.saveOrderPosition(orderPosition);
+  //
+  // Map<String, Object> variables = new HashMap<String, Object>();
+  // variables.put("orderId", order.getId());
+  // variables.put("orderPositionId", orderPosition.getId());
+  // ProcessInstance processInstance =
+  // this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
+  // }
+  //
+  // @Override
+  // public void updateOrderProcessState(OrderPositionState state, Long orderId, Long oderPositionId) {
+  //
+  // // updating OrderPosition happens in saveOrderPositon method ...
+  // // then update the state in process variable ...
+  //
+  // List<ProcessInstance> processInstances =
+  // this.runtimeService.createProcessInstanceQuery().variableValueEquals("orderId", orderId).list();
+  //
+  // Long processOrderPosition = null;
+  // ProcessInstance rightInstance = null;
+  // for (int i = 0; i < processInstances.size(); i++) {
+  // processOrderPosition = (Long) this.runtimeService.getVariable(processInstances.get(i).getId(), "orderPositionId");
+  // if (processOrderPosition == oderPositionId) {
+  // rightInstance = processInstances.get(i);
+  // }
+  // }
+  //
+  // this.runtimeService.setVariable(rightInstance.getProcessInstanceId(), "orderProcessState", state);
+  // }
+  //
+  // /**
+  // * sets the assignee for the current task
+  // *
+  // * @param taskId the ID of the current task
+  // * @param modelInstance the BPMN model instance
+  // */
+  // public void setAssigneeToTask(String taskId, BpmnModelInstance modelInstance) {
+  //
+  // }
+  //
+  // public void completeTask(String variableName, String variableValue) {
+  //
+  // Map<String, Object> variables = new HashMap<String, Object>();
+  // variables.put(variableName, variableValue);
+  //
+  // this.taskService.complete(this.taskService.createTaskQuery().singleResult().getId(), variables);
+  // }
 
 }

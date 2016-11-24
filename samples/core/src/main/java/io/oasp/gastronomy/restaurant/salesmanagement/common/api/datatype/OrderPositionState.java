@@ -15,6 +15,12 @@ public enum OrderPositionState {
 
   /**
    * The state of an {@link io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition} that has been
+   * accepted by and assigned to a cook for preparation.
+   */
+  ACCEPTED,
+
+  /**
+   * The state of an {@link io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition} that has been
    * prepared by the kitchen and can be served by the waiter.
    */
   PREPARED,
@@ -44,6 +50,15 @@ public enum OrderPositionState {
   public boolean isOrdered() {
 
     return (this == ORDERED);
+  }
+
+  /**
+   * @return {@code true} if the
+   *         {@link io.oasp.gastronomy.restaurant.salesmanagement.dataaccess.api.OrderPositionEntity} is accepted
+   */
+  public boolean isAccepted() {
+
+    return (this == ACCEPTED);
   }
 
   /**

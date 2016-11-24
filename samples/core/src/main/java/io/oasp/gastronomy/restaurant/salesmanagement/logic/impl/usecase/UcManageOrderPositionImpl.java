@@ -1,7 +1,5 @@
 package io.oasp.gastronomy.restaurant.salesmanagement.logic.impl.usecase;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.security.RolesAllowed;
@@ -10,8 +8,6 @@ import javax.inject.Named;
 
 import net.sf.mmm.util.exception.api.ObjectNotFoundUserException;
 
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
@@ -23,7 +19,7 @@ import io.oasp.gastronomy.restaurant.general.logic.api.UseCase;
 import io.oasp.gastronomy.restaurant.offermanagement.common.api.Offer;
 import io.oasp.gastronomy.restaurant.offermanagement.logic.api.Offermanagement;
 import io.oasp.gastronomy.restaurant.offermanagement.logic.api.to.OfferEto;
-import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
+import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.OrderPosition;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderState;
@@ -53,7 +49,9 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
 
   private Offermanagement offerManagement;
 
-  private RuntimeService runtimeService;
+  // private RuntimeService runtimeService;
+
+  private Processmanagement orderProcessmanagement;
 
   /**
    * The constructor.
@@ -100,6 +98,9 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
 
     Long orderPositionId = orderPosition.getId();
     String action;
+
+    // Map<String, Object> variables = new HashMap<String, Object>();
+
     if (orderPositionId == null) {
       action = "saved";
       Long offerId = orderPosition.getOfferId();
@@ -107,28 +108,26 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
       Objects.requireNonNull(offer, "Offer@" + offerId);
       orderPosition.setPrice(offer.getPrice());
       orderPosition.setOfferName(offer.getName());
+
     } else {
       OrderPositionEntity currentOrderPosition = getOrderPositionDao().find(orderPositionId);
       verifyUpdate(currentOrderPosition, orderPosition);
       action = "updated";
+      // TODO: bei einem Update herausfinden, welcher Prozessstatus erreicht ist!
+      // variables.put("orderProcessState", this.orderProcessmanagement.updateOrderProcessState());
     }
 
     OrderPositionEntity orderPositionEntity = getBeanMapper().map(orderPosition, OrderPositionEntity.class);
     orderPositionEntity = getOrderPositionDao().save(orderPositionEntity);
     LOG.debug("The order position with id {} has been {}.", orderPositionEntity.getId(), action);
 
-    // TODO: Dokumentation
-    Map<String, Object> variables = new HashMap<String, Object>();
+    // // TODO: Dokumentation
+    // if (action.equals("saved")) {
     // variables.put("orderId", orderPositionEntity.getOrderId());
     // variables.put("orderPositionId", orderPositionEntity.getId());
-    variables.put("orderId", 2L);
-    variables.put("orderPositionId", 1L);
-
-    // ProcessInstance processInstance =
-    // this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName());
-    ProcessInstance processInstance =
-        this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
-    String processID = processInstance.getId();
+    // variables.put("orderProcessState", OrderPositionState.ORDERED);
+    // this.orderProcessmanagement.startProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, variables);
+    // }
 
     return getBeanMapper().map(orderPositionEntity, OrderPositionEto.class);
   }
@@ -269,12 +268,21 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
   }
 
   /**
-   * @param runtimeService new value of {@link #getruntimeService}.
+   * @param orderProcessmanagement new value of {@link Inject}.
    */
   @Inject
-  public void setRuntimeService(RuntimeService runtimeService) {
+  public void setOrderProcessmanagement(Processmanagement orderProcessmanagement) {
 
-    this.runtimeService = runtimeService;
+    this.orderProcessmanagement = orderProcessmanagement;
   }
+
+  // /**
+  // * @param runtimeService new value of {@link #getruntimeService}.
+  // */
+  // @Inject
+  // public void setRuntimeService(RuntimeService runtimeService) {
+  //
+  // this.runtimeService = runtimeService;
+  // }
 
 }

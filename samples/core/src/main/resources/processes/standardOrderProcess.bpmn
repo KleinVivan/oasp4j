@@ -53,7 +53,7 @@
       <bpmn:incoming>SequenceFlow_089ef4u</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06kjmb3</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:userTask id="UserTask_UpdatePreparedOrder" name="Update prepared order">
+    <bpmn:userTask id="UserTask_UpdatePreparedOrder" name="Update prepared order" camunda:candidateGroups="cook">
       <bpmn:incoming>SequenceFlow_0tirrsq</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1kcm47h</bpmn:outgoing>
     </bpmn:userTask>
@@ -65,7 +65,7 @@
       <bpmn:outgoing>SequenceFlow_1dsms55</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_0h5dyau" sourceRef="UserTask_ConfirmPayment" targetRef="UserTask_CloseOrder" />
-    <bpmn:userTask id="UserTask_ConfirmPayment" name="Receive and confirm payment">
+    <bpmn:userTask id="UserTask_ConfirmPayment" name="Receive and confirm payment" camunda:candidateGroups="waiter">
       <bpmn:incoming>SequenceFlow_06kjmb3</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0h5dyau</bpmn:outgoing>
     </bpmn:userTask>

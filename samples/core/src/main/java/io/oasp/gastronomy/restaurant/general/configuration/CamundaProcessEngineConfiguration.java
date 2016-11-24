@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -41,11 +40,14 @@ public class CamundaProcessEngineConfiguration {
   @Inject
   private ResourcePatternResolver resourceLoader;
 
-  @Bean
-  public PlatformTransactionManager transactionManager() {
+  // @Bean
+  // public PlatformTransactionManager transactionManager() {
+  //
+  // return new DataSourceTransactionManager(this.dataSource);
+  // }
 
-    return new DataSourceTransactionManager(this.dataSource);
-  }
+  @Inject
+  private PlatformTransactionManager transactionManager;
 
   @Bean
   public SpringProcessEngineConfiguration processEngineConfiguration() throws IOException {
@@ -53,7 +55,8 @@ public class CamundaProcessEngineConfiguration {
     SpringProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
 
     config.setDataSource(this.dataSource);
-    config.setTransactionManager(transactionManager());
+    // config.setTransactionManager(transactionManager());
+    config.setTransactionManager(this.transactionManager);
 
     config.setDatabaseSchemaUpdate("true");
     config.setHistory("audit");
