@@ -21,22 +21,27 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
 
   Map<String, Object> variables = new HashMap<String, Object>();
 
-  public String startOrderProcess(ProcessKeyName processKeyName, Long orderId, Long orderPositionId) {
+  public ProcessInstance startOrderProcess(ProcessKeyName processKeyName, Long orderId, Long orderPositionId) {
 
     this.variables.put("orderId", orderId);
     this.variables.put("orderPositionId", orderPositionId);
-    this.variables.put("orderProcessState", OrderPositionState.ORDERED);
+    this.variables.put("orderProcessState", OrderPositionState.ORDERED.name());
 
-    String processInstanceId = startProcess("orderProcessEngine", processKeyName, this.variables);
-    return processInstanceId;
+    String businessKey = "BK_" + orderId + "_" + orderPositionId;
+
+    ProcessInstance processInstance = startProcess("orderProcessEngine", processKeyName, businessKey, this.variables);
+    return processInstance;
   }
 
-  public String getOrderProcess(Long orderId, Long orderPositionId) {
+  public ProcessInstance getOrderProcess(Long orderId, Long orderPositionId) {
 
     // List<ProcessInstance> processInstances
     // ProcessInstanceQuery piq = new ProcessInstanceQuery();
 
-    ProcessInstance rightInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
+    // this.variables.put("orderId", orderId);
+    // this.variables.put("orderPositionId", orderPositionId);
+
+    ProcessInstance processInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
         .variableValueEquals("orderId", orderId).variableValueEquals("orderPositionId", orderPositionId).singleResult();
 
     // Long processOrderPosition = null;
@@ -49,20 +54,23 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     // }
     // }
 
-    return rightInstance.getId();
+    return processInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
+        .processInstanceBusinessKey("BK_" + orderId + "_" + orderPositionId).singleResult();
   }
 
-  public void updateOrderProcessState(OrderPositionState state, Long orderId, Long orderPositionId) {
+  public void updateOrderProcessState(OrderPositionState state, ProcessInstance processInstance) {
 
-    String processInstanceId = getOrderProcess(orderId, orderPositionId);
-    this.processEngine.getRuntimeService().setVariable(processInstanceId, "orderProcessState", state);
+    this.processEngine.getRuntimeService().setVariable(processInstance.getProcessInstanceId(), "orderProcessState",
+        state.name());
   }
 
   public void setAssigneeToTask(String assignee, Long orderId, Long orderPositionId) {
 
     Task task = this.processEngine.getTaskService().createTaskQuery()
-        .processInstanceId(getOrderProcess(orderId, orderPositionId)).singleResult();
+        .processInstanceId(getOrderProcess(orderId, orderPositionId).getProcessInstanceId()).singleResult();
     task.setAssignee(assignee);
+
+    String sign = task.getAssignee();
   }
 
   // /**
@@ -74,13 +82,33 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   // public void setAssigneeToTask(String taskId, BpmnModelInstance modelInstance) {
   //
   // }
-  //
-  // public void completeTask(String variableName, String variableValue) {
-  //
-  // Map<String, Object> variables = new HashMap<String, Object>();
-  // variables.put(variableName, variableValue);
-  //
-  // this.taskService.complete(this.taskService.createTaskQuery().singleResult().getId(), variables);
-  // }
+
+  public void completeCurrentTask(Long orderId, Long orderPositionId) {
+
+    Task task = this.processEngine.getTaskService().createTaskQuery()
+        .processInstanceId(getOrderProcess(orderId, orderPositionId).getProcessInstanceId()).singleResult();
+
+    OrderPositionState state;
+    String taskName = task.getName();
+
+    switch (taskName) {
+    case "UserTask_AcceptOrder":
+      state = OrderPositionState.ACCEPTED;
+      break;
+    case "UserTask_UpdatePreparedOrder":
+      state = OrderPositionState.PREPARED;
+      break;
+    case "UserTask_UpdateServedOrder":
+      state = OrderPositionState.DELIVERED;
+    default:
+      state = OrderPositionState.ORDERED;
+      break;
+    }
+
+    updateOrderProcessState(state, getOrderProcess(orderId, orderPositionId));
+
+    this.processEngine.getTaskService().complete(task.getId());
+
+  }
 
 }

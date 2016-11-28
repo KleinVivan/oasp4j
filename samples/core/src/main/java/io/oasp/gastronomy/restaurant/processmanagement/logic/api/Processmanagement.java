@@ -2,6 +2,8 @@ package io.oasp.gastronomy.restaurant.processmanagement.logic.api;
 
 import java.util.Map;
 
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
 
 /**
@@ -14,7 +16,8 @@ public interface Processmanagement {
 
   // public String startProcess(ProcessKeyName processKeyName, Map<String, Object> variables);
 
-  public String startProcess(String processEngineKey, ProcessKeyName processKeyName, Map<String, Object> variables);
+  public ProcessInstance startProcess(String processEngineKey, ProcessKeyName processKeyName, String businessKey,
+      Map<String, Object> variables);
 
   // public void startProcess(ProcessKeyName processKeyName, Long orderId, Long oderPositionId);
 

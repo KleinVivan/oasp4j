@@ -25,18 +25,28 @@ abstract class ProcessmanagementImpl implements Processmanagement {
   // private Map<String, ProcessEngine> processEngines = ProcessEngines.getProcessEngines();
 
   @Override
-  public String startProcess(String processEngineKey, ProcessKeyName processKeyName, Map<String, Object> variables) {
+  public ProcessInstance startProcess(String processEngineKey, ProcessKeyName processKeyName, String businessKey,
+      Map<String, Object> variables) {
 
     // System.out.println("Prozessengines Anzahl " + this.processEngines.size());
     // ProcessInstance processInstance = this.processEngines.get(processEngineKey).getRuntimeService()
     // .startProcessInstanceByKey(processKeyName.getKeyName(), variables);
-    ProcessInstance processInstance =
-        this.processEngine.getRuntimeService().startProcessInstanceByKey(processKeyName.getKeyName(), variables);
+    ProcessInstance processInstance = this.processEngine.getRuntimeService()
+        .startProcessInstanceByKey(processKeyName.getKeyName(), businessKey, variables);
     // VariableInstance varInst = this.processEngine.getRuntimeService().createVariableInstanceQuery()
     // .variableValueEquals("orderId", variables.get("orderId"))
     // .variableValueEquals("orderPositionId", variables.get("orderPositionId")).singleResult();
-    return processInstance.getProcessInstanceId();
+    // return processInstance.getProcessInstanceId();
+    return processInstance;
   }
+
+  // public ProcessInstance getOrderProcess(Map<String, Object> variables) {
+  //
+  // ProcessInstance processInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
+  // .variableValueEquals("orderId", orderId).variableValueEquals("orderPositionId", orderPositionId).singleResult();
+  //
+  // return processInstance;
+  // }
 
   //
   // /*

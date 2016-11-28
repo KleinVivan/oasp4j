@@ -34,6 +34,7 @@ import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.Product
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
+import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.Staffmanagement;
 import io.oasp.module.test.common.base.ComponentTest;
 
 /**
@@ -47,6 +48,9 @@ public class SalesManagementTest extends ComponentTest {
 
   @Inject
   private Salesmanagement salesManagement;
+
+  @Inject
+  private Staffmanagement staffManagement;
 
   @Inject
   private DbTestHelper dbTestHelper;
@@ -86,8 +90,11 @@ public class SalesManagementTest extends ComponentTest {
     Map<String, Object> variables = new HashMap<String, Object>();
     variables.put("orderId", 2L);
     variables.put("orderPositionId", 999L);
-    ProcessInstance processInstance =
-        this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
+    // ProcessInstance processInstance =
+    // this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
+
+    ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(
+        ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), "BK_" + 2 + "_" + 999, variables);
   }
 
   /**
@@ -111,22 +118,51 @@ public class SalesManagementTest extends ComponentTest {
       orderPosition = this.salesManagement.saveOrderPosition(orderPosition);
       assertThat(orderPosition).isNotNull();
 
-      String pI = this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, order.getId(),
-          orderPosition.getId());
+      ProcessInstance pI = this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS,
+          order.getId(), orderPosition.getId());
       assertThat(pI).isNotNull();
 
-      String getPI = this.orderProcessmanagement.getOrderProcess(order.getId(), orderPosition.getId());
+      ProcessInstance getPI = this.orderProcessmanagement.getOrderProcess(order.getId(), orderPosition.getId());
       assertThat(getPI).isNotNull();
-      assertThat(pI).isEqualTo(getPI);
+      assertThat(pI.getProcessInstanceId()).isEqualTo(getPI.getProcessInstanceId());
 
-      ProcessEngineTests
-          .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI).singleResult())
-          .isStarted().isWaitingAt("UserTask_AcceptOrder");
-      this.orderProcessmanagement.setAssigneeToTask("Carl Cook", order.getId(), orderPosition.getId());
+      assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderId")).isNotNull();
+      assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderPositionId")).isNotNull();
 
-      ProcessEngineTests
-          .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI).singleResult())
-          .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName()).task().isAssignedTo("Carl Cook");
+      assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderProcessState"))
+          .isEqualTo(OrderPositionState.ORDERED.name());
+
+      ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
+          .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
+          .isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+      // this.orderProcessmanagement.setAssigneeToTask("Carl Cook", order.getId(), orderPosition.getId());
+
+      // ProcessEngineTests
+      // .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI.getProcessInstanceId())
+      // .singleResult())
+      // .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName()).task().isAssignedTo("Carl Cook");
+
+      this.orderProcessmanagement.completeCurrentTask(order.getId(), orderPosition.getId());
+
+      ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
+          .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
+          .hasPassed(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+
+      ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
+          .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
+          .isWaitingAt(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+      this.orderProcessmanagement.completeCurrentTask(order.getId(), orderPosition.getId());
+
+      ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
+          .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
+          .hasPassed(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+      this.runtimeService.correlateMessage("Message_Ready", getPI.getBusinessKey());
+
+      ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
+          .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
+          .isWaitingAt(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
 
       // list all process instances
       List<ProcessInstance> processInstances = this.runtimeService.createProcessInstanceQuery().list();

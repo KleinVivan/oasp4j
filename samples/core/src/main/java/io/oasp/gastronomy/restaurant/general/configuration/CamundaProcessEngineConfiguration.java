@@ -27,7 +27,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class CamundaProcessEngineConfiguration {
 
-  @Value("${camunda.bpm.history-level:none}")
+  @Value("${camunda.bpm.history-level:activity}")
   private String historyLevel;
 
   // add more configuration here
