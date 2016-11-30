@@ -1,7 +1,6 @@
 package io.oasp.gastronomy.restaurant.salesmanagement.logic.impl;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -111,30 +110,36 @@ public class SalesManagementTest extends ComponentTest {
 
     try {
       // given
-      OrderEto order = new OrderEtoBuilder().tableId(1L).createNew();
-      order = this.salesManagement.saveOrder(order);
-      OrderPositionEto orderPosition = new OrderPositionEtoBuilder().offerId(5L).orderId(order.getId())
-          .offerName("Cola").price(new Money(1.2)).createNew();
-      orderPosition = this.salesManagement.saveOrderPosition(orderPosition);
+      OrderEto order = createNewOrderEto();
+      OrderPositionEto orderPosition = createNewOrderPositionEto(order);
       assertThat(orderPosition).isNotNull();
 
+      // start orderprocess
       ProcessInstance pI = this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS,
           order.getId(), orderPosition.getId());
       assertThat(pI).isNotNull();
 
+      // get orderprocess
       ProcessInstance getPI = this.orderProcessmanagement.getOrderProcess(order.getId(), orderPosition.getId());
       assertThat(getPI).isNotNull();
+      String getPiId = getPI.getProcessInstanceId();
       assertThat(pI.getProcessInstanceId()).isEqualTo(getPI.getProcessInstanceId());
 
       assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderId")).isNotNull();
       assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderPositionId")).isNotNull();
 
+      // Variablenwert auslesen
+      // assert
+
+      // check orderprocess state
       assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderProcessState"))
           .isEqualTo(OrderPositionState.ORDERED.name());
 
+      // check if orderprocess is started and waiting at first task
       ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
           .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
           .isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+
       // this.orderProcessmanagement.setAssigneeToTask("Carl Cook", order.getId(), orderPosition.getId());
 
       // ProcessEngineTests
@@ -142,7 +147,10 @@ public class SalesManagementTest extends ComponentTest {
       // .singleResult())
       // .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName()).task().isAssignedTo("Carl Cook");
 
-      this.orderProcessmanagement.completeCurrentTask(order.getId(), orderPosition.getId());
+      // this.orderProcessmanagement.completeCurrentTask(order.getId(), orderPosition.getId());
+      // check orderprocess state
+      assertThat(this.runtimeService.getVariable(getPI.getProcessInstanceId(), "orderProcessState"))
+          .isEqualTo(OrderPositionState.ACCEPTED.name());
 
       ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
           .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
@@ -152,7 +160,7 @@ public class SalesManagementTest extends ComponentTest {
           .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
           .isWaitingAt(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
 
-      this.orderProcessmanagement.completeCurrentTask(order.getId(), orderPosition.getId());
+      // this.orderProcessmanagement.completeCurrentTask(order.getId(), orderPosition.getId());
 
       ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
           .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
@@ -163,45 +171,6 @@ public class SalesManagementTest extends ComponentTest {
       ProcessEngineTests.assertThat(this.runtimeService.createProcessInstanceQuery()
           .processInstanceId(getPI.getProcessInstanceId()).singleResult()).isStarted()
           .isWaitingAt(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
-
-      // list all process instances
-      List<ProcessInstance> processInstances = this.runtimeService.createProcessInstanceQuery().list();
-      assertThat(processInstances.size()).isGreaterThan(0);
-
-      // list all process instances with specific oderId, because we cannot query more than one key value pair
-      processInstances =
-          this.runtimeService.createProcessInstanceQuery().variableValueEquals("orderId", order.getId()).list();
-      assertThat(processInstances.size()).isGreaterThan(0);
-
-      Long processOrderPosition = null;
-      ProcessInstance rightInstance = null;
-
-      for (int i = 0; i < processInstances.size(); i++) {
-        System.out.println("Process Instance: " + processInstances.get(i).getProcessInstanceId());
-
-        processOrderPosition =
-            (Long) this.runtimeService.getVariable(processInstances.get(i).getId(), "orderPositionId");
-        System.out.println("Orderposition: " + processOrderPosition);
-        if (processOrderPosition == orderPosition.getId()) {
-          rightInstance = processInstances.get(i);
-        }
-      }
-
-      assertThat(rightInstance).isNotNull();
-      // ProcessEngineTests.assertThat(rightInstance).isStarted()
-      // .isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
-      // ProcessEngineTests.assertThat(this.runtimeService.getVariable(rightInstance.getId(), "orderProcessState"))
-      // .isEqualTo(OrderPositionState.ORDERED);
-
-      // // ProcessInstance pi =
-      // // this.runtimeservice.createProcessInstanceQuery().variableValueEquals("orderId", 2L).singleResult();
-      // assertThat(rightInstance).isNotNull();
-
-      // ProcessInstance pi = this.runtimeservice.createProcessInstanceQuery().variableValueEquals("orderId", 2L)
-      // .variableValueEquals("oderPositionId", 1L).singleResult();
-
-      // ProcessInstance pi = this.runtimeservice.createProcessInstanceQuery().singleResult();
-      // assertThat(pi).isNotNull();
 
     } catch (ConstraintViolationException e) {
       // BV is really painful as you need such code to see the actual error in JUnit.
@@ -219,6 +188,28 @@ public class SalesManagementTest extends ComponentTest {
   }
 
   /**
+   * @param order
+   * @return
+   */
+  public OrderPositionEto createNewOrderPositionEto(OrderEto order) {
+
+    OrderPositionEto orderPosition = new OrderPositionEtoBuilder().offerId(5L).orderId(order.getId()).offerName("Cola")
+        .price(new Money(1.2)).createNew();
+    orderPosition = this.salesManagement.saveOrderPosition(orderPosition);
+    return orderPosition;
+  }
+
+  /**
+   * @return
+   */
+  public OrderEto createNewOrderEto() {
+
+    OrderEto order = new OrderEtoBuilder().tableId(1L).createNew();
+    order = this.salesManagement.saveOrder(order);
+    return order;
+  }
+
+  /**
    * Tests if the {@link OrderPositionState} is persisted correctly. The test modifies the {@link OrderPositionState} as
    * well as the drinkState {@link ProductOrderState}. The test focuses on saving {@link OrderPositionEto} saving and
    * verification of state change. Test data is created using Cobigen generated builders.
@@ -227,13 +218,9 @@ public class SalesManagementTest extends ComponentTest {
   public void testOrderPositionStateChange() {
 
     try {
-      // given
-      OrderEto order = new OrderEtoBuilder().tableId(1L).createNew();
-      order = this.salesManagement.saveOrder(order);
+      OrderEto order = createNewOrderEto();
       Long orderId = order.getId();
-      OrderPositionEto orderPosition = new OrderPositionEtoBuilder().offerId(5L).orderId(order.getId())
-          .offerName("Cola").price(new Money(1.2)).createNew();
-      orderPosition = this.salesManagement.saveOrderPosition(orderPosition);
+      OrderPositionEto orderPosition = createNewOrderPositionEto(order);
       assertThat(orderPosition).isNotNull();
       orderPosition.setState(OrderPositionState.ORDERED);
       orderPosition.setDrinkState(ProductOrderState.ORDERED);
@@ -262,6 +249,14 @@ public class SalesManagementTest extends ComponentTest {
       throw new IllegalStateException(sb.toString(), e);
     }
 
+  }
+
+  /**
+   * @param salesManagement new value of {@link #getsalesManagement}.
+   */
+  public void setSalesManagement(Salesmanagement salesManagement) {
+
+    this.salesManagement = salesManagement;
   }
 
 }

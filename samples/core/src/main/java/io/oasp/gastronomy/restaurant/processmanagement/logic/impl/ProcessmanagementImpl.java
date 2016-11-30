@@ -6,9 +6,9 @@ import javax.inject.Inject;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.springframework.stereotype.Component;
 
-import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
 import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
 
 /**
@@ -25,14 +25,13 @@ abstract class ProcessmanagementImpl implements Processmanagement {
   // private Map<String, ProcessEngine> processEngines = ProcessEngines.getProcessEngines();
 
   @Override
-  public ProcessInstance startProcess(String processEngineKey, ProcessKeyName processKeyName, String businessKey,
-      Map<String, Object> variables) {
+  public ProcessInstance startProcess(String processKeyName, String businessKey, Map<String, Object> variables) {
 
     // System.out.println("Prozessengines Anzahl " + this.processEngines.size());
     // ProcessInstance processInstance = this.processEngines.get(processEngineKey).getRuntimeService()
     // .startProcessInstanceByKey(processKeyName.getKeyName(), variables);
-    ProcessInstance processInstance = this.processEngine.getRuntimeService()
-        .startProcessInstanceByKey(processKeyName.getKeyName(), businessKey, variables);
+    ProcessInstance processInstance =
+        this.processEngine.getRuntimeService().startProcessInstanceByKey(processKeyName, businessKey, variables);
     // VariableInstance varInst = this.processEngine.getRuntimeService().createVariableInstanceQuery()
     // .variableValueEquals("orderId", variables.get("orderId"))
     // .variableValueEquals("orderPositionId", variables.get("orderPositionId")).singleResult();
@@ -98,13 +97,12 @@ abstract class ProcessmanagementImpl implements Processmanagement {
   // public void setAssigneeToTask(String taskId, BpmnModelInstance modelInstance) {
   //
   // }
-  //
-  // public void completeTask(String variableName, String variableValue) {
-  //
-  // Map<String, Object> variables = new HashMap<String, Object>();
-  // variables.put(variableName, variableValue);
-  //
-  // this.taskService.complete(this.taskService.createTaskQuery().singleResult().getId(), variables);
-  // }
+
+  public void completeCurrentTask(ProcessInstance processInstance, Map<String, Object> variables) {
+
+    Task task = this.processEngine.getTaskService().createTaskQuery()
+        .processInstanceId(processInstance.getProcessInstanceId()).active().singleResult();
+    this.processEngine.getTaskService().complete(task.getId(), variables);
+  }
 
 }
