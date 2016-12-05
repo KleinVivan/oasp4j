@@ -12,6 +12,7 @@ import javax.validation.ConstraintViolationException;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.ProcessEngineTests;
 import org.junit.After;
@@ -96,8 +97,9 @@ public class OrderProcessManagementTest extends ComponentTest {
     // ProcessInstance processInstance =
     // this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
 
-    ProcessInstance processInstance = this.runtimeService.startProcessInstanceByKey(
+    ProcessInstance firstInstance = this.runtimeService.startProcessInstanceByKey(
         ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), "BK_" + 2 + "_" + 999, variables);
+    this.processInstancesList.add(firstInstance);
   }
 
   /**
@@ -165,18 +167,28 @@ public class OrderProcessManagementTest extends ComponentTest {
       String processInstanceId = processInstance.getProcessInstanceId();
 
       // get orderprocess
-      ProcessInstance getProcessInstance = this.orderProcessmanagement.getOrderProcess(orderId, orderPositionId);
+      // ProcessInstance getProcessInstance = this.orderProcessmanagement.getOrderProcess(orderId, orderPositionId);
+      ProcessInstance getProcessInstance =
+          this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
       assertThat(getProcessInstance).isNotNull();
       String getProcessInstanceId = getProcessInstance.getProcessInstanceId();
 
       assertThat(processInstanceId).isEqualTo(getProcessInstanceId);
-      assertThat(processInstance).isEqualTo(getProcessInstance);
 
-      assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderId")).isNotNull();
-      assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderPositionId")).isNotNull();
+      List<Execution> currentExecutions =
+          this.runtimeService.createExecutionQuery().processInstanceId(processInstanceId).list();
+
+      // assertThat(processInstance).isSameAs(getProcessInstance);
+
+      // assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderId")).isNotNull();
+      // assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderPositionId")).isNotNull();
 
       // Variablenwert auslesen
+      Long getOrderId = (Long) this.runtimeService.getVariable(getProcessInstanceId, "orderId");
+      Long getOrderPositionId = (Long) this.runtimeService.getVariable(getProcessInstanceId, "orderPositionId");
       // assert
+      assertThat(getOrderId).isEqualTo(orderId);
+      assertThat(getOrderPositionId).isEqualTo(orderPositionId);
 
       // check orderprocess state
       assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderProcessState"))
@@ -222,6 +234,79 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(getProcessInstanceId).singleResult())
+          .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+
+    } catch (ConstraintViolationException e) {
+      // BV is really painful as you need such code to see the actual error in JUnit.
+      StringBuilder sb = new StringBuilder(64);
+      sb.append("Constraints violated:");
+      for (ConstraintViolation<?> v : e.getConstraintViolations()) {
+        sb.append("\n");
+        sb.append(v.getPropertyPath());
+        sb.append(":");
+        sb.append(v.getMessage());
+      }
+      throw new IllegalStateException(sb.toString(), e);
+    }
+
+  }
+
+  @Test
+  public void testOrderProcessFlow() {
+
+    try {
+      // given
+      ProcessInstance processInstance = getNewProcessInstance();
+      Long orderId = (Long) this.runtimeService.getVariable(processInstance.getProcessInstanceId(), "orderId");
+      Long orderPositionId =
+          (Long) this.runtimeService.getVariable(processInstance.getProcessInstanceId(), "orderPositionId");
+
+      String processInstanceId = processInstance.getProcessInstanceId();
+
+      // check orderprocess state is ordered
+      assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
+          .isEqualTo(OrderPositionState.ORDERED.name());
+
+      // check if orderprocess is started and waiting at accept task
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+
+      // this.orderProcessmanagement.setAssigneeToTask("Carl Cook", order.getId(), orderPosition.getId());
+
+      // ProcessEngineTests
+      // .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI.getProcessInstanceId())
+      // .singleResult())
+      // .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName()).task().isAssignedTo("Carl Cook");
+
+      this.orderProcessmanagement.acceptOrder(processInstance);
+      // check orderprocess state
+      assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
+          .isEqualTo(OrderPositionState.ACCEPTED.name());
+
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().hasPassed(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+      this.orderProcessmanagement.updateOrderPrepared(processInstance);
+
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().hasPassed(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+      this.runtimeService.correlateMessage("Message_Ready", processInstance.getBusinessKey());
+
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
           .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
 
     } catch (ConstraintViolationException e) {

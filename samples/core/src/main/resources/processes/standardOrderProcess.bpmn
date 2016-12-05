@@ -53,6 +53,9 @@
       <bpmn:outgoing>SequenceFlow_0fhk1fv</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:userTask id="UserTask_AcceptOrder" name="Accept order" camunda:candidateGroups="cook">
+      <bpmn:extensionElements>
+        <camunda:executionListener class="" event="start" />
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0fhk1fv</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0tirrsq</bpmn:outgoing>
     </bpmn:userTask>

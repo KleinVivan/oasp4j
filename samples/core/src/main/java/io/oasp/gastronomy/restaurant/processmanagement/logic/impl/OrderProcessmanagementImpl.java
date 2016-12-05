@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.task.Task;
 import org.springframework.stereotype.Component;
 
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
@@ -78,25 +77,6 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     this.processEngine.getRuntimeService().setVariable(processInstance.getProcessInstanceId(), "orderProcessState",
         state.name());
   }
-
-  public void setAssigneeToTask(String assignee, Long orderId, Long orderPositionId) {
-
-    Task task = this.processEngine.getTaskService().createTaskQuery()
-        .processInstanceId(getOrderProcess(orderId, orderPositionId).getProcessInstanceId()).singleResult();
-    task.setAssignee(assignee);
-
-    String sign = task.getAssignee();
-  }
-
-  // /**
-  // * sets the assignee for the current task
-  // *
-  // * @param taskId the ID of the current task
-  // * @param modelInstance the BPMN model instance
-  // */
-  // public void setAssigneeToTask(String taskId, BpmnModelInstance modelInstance) {
-  //
-  // }
 
   // public void completeCurrentTask(Long orderId, Long orderPositionId) {
   //

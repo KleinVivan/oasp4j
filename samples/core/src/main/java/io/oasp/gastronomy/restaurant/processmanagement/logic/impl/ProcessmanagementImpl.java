@@ -39,6 +39,23 @@ abstract class ProcessmanagementImpl implements Processmanagement {
     return processInstance;
   }
 
+  @Override
+  public void stopProcess(String processId, String deleteReason) {
+
+    this.processEngine.getRuntimeService().deleteProcessInstance(processId, deleteReason);
+
+  }
+
+  @Override
+  public void setAssigneeToCurrentTask(ProcessInstance processInstance, String assignee) {
+
+    Task task = this.processEngine.getTaskService().createTaskQuery()
+        .processInstanceId(processInstance.getProcessInstanceId()).singleResult();
+    // task.setAssignee(assignee);
+
+    this.processEngine.getTaskService().setAssignee(task.getId(), assignee);
+  }
+
   // public ProcessInstance getOrderProcess(Map<String, Object> variables) {
   //
   // ProcessInstance processInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
@@ -86,16 +103,6 @@ abstract class ProcessmanagementImpl implements Processmanagement {
   // }
   //
   // this.runtimeService.setVariable(rightInstance.getProcessInstanceId(), "orderProcessState", state);
-  // }
-  //
-  // /**
-  // * sets the assignee for the current task
-  // *
-  // * @param taskId the ID of the current task
-  // * @param modelInstance the BPMN model instance
-  // */
-  // public void setAssigneeToTask(String taskId, BpmnModelInstance modelInstance) {
-  //
   // }
 
   public void completeCurrentTask(ProcessInstance processInstance, Map<String, Object> variables) {
