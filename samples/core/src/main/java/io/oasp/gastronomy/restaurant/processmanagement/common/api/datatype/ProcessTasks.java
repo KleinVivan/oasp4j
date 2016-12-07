@@ -1,10 +1,7 @@
 package io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype;
 
 /**
- * TODO VMUSCHTE This type ...
- *
- * @author VMUSCHTE
- * @since dev
+ * @author vmuschter
  */
 public enum ProcessTasks {
   USERTASK_ACCEPTORDER("UserTask_AcceptOrder"), USERTASK_UPDATEPREPAREDORDER(

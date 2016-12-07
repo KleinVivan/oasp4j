@@ -51,9 +51,16 @@ abstract class ProcessmanagementImpl implements Processmanagement {
 
     Task task = this.processEngine.getTaskService().createTaskQuery()
         .processInstanceId(processInstance.getProcessInstanceId()).singleResult();
-    // task.setAssignee(assignee);
 
     this.processEngine.getTaskService().setAssignee(task.getId(), assignee);
+  }
+
+  @Override
+  public void completeCurrentTask(ProcessInstance processInstance, Map<String, Object> variables) {
+
+    Task task = this.processEngine.getTaskService().createTaskQuery()
+        .processInstanceId(processInstance.getProcessInstanceId()).active().singleResult();
+    this.processEngine.getTaskService().complete(task.getId(), variables);
   }
 
   // public ProcessInstance getOrderProcess(Map<String, Object> variables) {
@@ -104,12 +111,5 @@ abstract class ProcessmanagementImpl implements Processmanagement {
   //
   // this.runtimeService.setVariable(rightInstance.getProcessInstanceId(), "orderProcessState", state);
   // }
-
-  public void completeCurrentTask(ProcessInstance processInstance, Map<String, Object> variables) {
-
-    Task task = this.processEngine.getTaskService().createTaskQuery()
-        .processInstanceId(processInstance.getProcessInstanceId()).active().singleResult();
-    this.processEngine.getTaskService().complete(task.getId(), variables);
-  }
 
 }

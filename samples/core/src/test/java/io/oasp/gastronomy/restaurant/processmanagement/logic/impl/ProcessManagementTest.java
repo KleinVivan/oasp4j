@@ -10,6 +10,7 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.assertions.ProcessEngineTests;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -69,6 +70,9 @@ public class ProcessManagementTest extends ComponentTest {
     TestUtil.logout();
   }
 
+  /**
+   *
+   */
   @Test
   public void testStartProcess() {
 
@@ -170,7 +174,11 @@ public class ProcessManagementTest extends ComponentTest {
     this.processmanagement.completeCurrentTask(processInstance, variables);
 
     // assert that task is completed
+    Task task = this.processEngine.getTaskService().createTaskQuery().singleResult();
+    assertThat(task).isNull();
 
+    // assert that process is ended
+    ProcessEngineTests.assertThat(processInstance).isEnded();
   }
 
 }

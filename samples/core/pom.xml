@@ -38,8 +38,6 @@
 
 
   <dependencies>
-
-
     <dependency>
       <groupId>io.oasp.java.modules</groupId>
       <artifactId>oasp4j-batch</artifactId>

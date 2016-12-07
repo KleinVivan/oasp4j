@@ -20,9 +20,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
- * TODO VMUSCHTE This type ...
- *
- * @author VMUSCHTE
+ * @author vmuschter
  */
 @Configuration
 public class CamundaProcessEngineConfiguration {
@@ -40,12 +38,6 @@ public class CamundaProcessEngineConfiguration {
   @Inject
   private ResourcePatternResolver resourceLoader;
 
-  // @Bean
-  // public PlatformTransactionManager transactionManager() {
-  //
-  // return new DataSourceTransactionManager(this.dataSource);
-  // }
-
   @Inject
   private PlatformTransactionManager transactionManager;
 
@@ -55,7 +47,6 @@ public class CamundaProcessEngineConfiguration {
     SpringProcessEngineConfiguration config = new SpringProcessEngineConfiguration();
 
     config.setDataSource(this.dataSource);
-    // config.setTransactionManager(transactionManager());
     config.setTransactionManager(this.transactionManager);
 
     config.setDatabaseSchemaUpdate("true");

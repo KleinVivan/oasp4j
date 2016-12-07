@@ -1,13 +1,10 @@
 package io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype;
 
 /**
- * TODO VMUSCHTE This type ...
- *
- * @author VMUSCHTE
- * @since dev
+ * @author vmuschter
  */
 public enum ProcessKeyName {
-  STANDARD_ORDER_PROCESS("StandardOrderProcess");
+  STANDARD_ORDER_PROCESS("RestaurantOrderProcessEngine");
 
   private final String keyName;
 

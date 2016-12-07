@@ -3,11 +3,14 @@ package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
 
 /**
  * TODO VMUSCHTE This type ...
@@ -17,6 +20,9 @@ import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPo
  */
 @Component
 public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
+
+  @Inject
+  Salesmanagement salesmanagement;
 
   Map<String, Object> variables = new HashMap<String, Object>();
 

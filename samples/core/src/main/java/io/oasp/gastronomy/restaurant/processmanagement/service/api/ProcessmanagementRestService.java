@@ -1,10 +1,7 @@
 package io.oasp.gastronomy.restaurant.processmanagement.service.api;
 
 /**
- * TODO VMUSCHTE This type ...
- *
- * @author VMUSCHTE
- * @since dev
+ * @author vmuschter
  */
 public interface ProcessmanagementRestService {
 

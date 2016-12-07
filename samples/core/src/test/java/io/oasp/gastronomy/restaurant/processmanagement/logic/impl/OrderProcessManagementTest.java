@@ -1,6 +1,5 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +65,7 @@ public class OrderProcessManagementTest extends ComponentTest {
 
   private OrderProcessmanagementImpl orderProcessmanagement;
 
-  private List<ProcessInstance> processInstancesList = new ArrayList<ProcessInstance>();
+  // private List<ProcessInstance> processInstancesList = new ArrayList<ProcessInstance>();
 
   /**
    * @param orderProcessmanagement new value of {@link Inject}.
@@ -99,7 +98,7 @@ public class OrderProcessManagementTest extends ComponentTest {
 
     ProcessInstance firstInstance = this.runtimeService.startProcessInstanceByKey(
         ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), "BK_" + 2 + "_" + 999, variables);
-    this.processInstancesList.add(firstInstance);
+
   }
 
   /**
@@ -107,9 +106,12 @@ public class OrderProcessManagementTest extends ComponentTest {
    */
   @After
   public void tearDown() {
-    // ProcessInstance beenden
+    // delete all process instances
 
-    for (ProcessInstance pi : this.processInstancesList) {
+    List<ProcessInstance> processInstancesList =
+        this.processEngine.getRuntimeService().createProcessInstanceQuery().active().list();
+
+    for (ProcessInstance pi : processInstancesList) {
       this.processEngine.getRuntimeService().deleteProcessInstance(pi.getProcessInstanceId(), null);
     }
 
@@ -131,7 +133,6 @@ public class OrderProcessManagementTest extends ComponentTest {
           .startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId, orderPositionId);
 
       String pId = processInstance.getProcessInstanceId();
-      this.processInstancesList.add(processInstance);
 
       // check if process variables exist with correct value
       Long processOrderId = (Long) this.runtimeService.getVariable(pId, "orderId");
@@ -335,7 +336,6 @@ public class OrderProcessManagementTest extends ComponentTest {
     ProcessInstance processInstance =
         this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId, orderPositionId);
 
-    this.processInstancesList.add(processInstance);
     return processInstance;
   }
 
