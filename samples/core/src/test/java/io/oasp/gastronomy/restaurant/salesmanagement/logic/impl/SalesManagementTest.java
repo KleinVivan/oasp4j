@@ -200,12 +200,32 @@ public class SalesManagementTest extends ComponentTest {
   }
 
   /**
+   * @param order
+   * @return
+   */
+  public OrderPositionEto prepareNewOrderPositionEto(OrderEto order) {
+
+    OrderPositionEto orderPosition = new OrderPositionEtoBuilder().offerId(5L).orderId(order.getId()).offerName("Cola")
+        .price(new Money(1.2)).createNew();
+    return orderPosition;
+  }
+
+  /**
    * @return
    */
   public OrderEto createNewOrderEto() {
 
     OrderEto order = new OrderEtoBuilder().tableId(1L).createNew();
     order = this.salesManagement.saveOrder(order);
+    return order;
+  }
+
+  /**
+   * @return
+   */
+  public OrderEto prepareNewOrderEto() {
+
+    OrderEto order = new OrderEtoBuilder().tableId(1L).createNew();
     return order;
   }
 

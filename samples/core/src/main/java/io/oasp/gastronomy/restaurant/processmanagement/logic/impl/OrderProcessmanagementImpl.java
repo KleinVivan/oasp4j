@@ -1,16 +1,22 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.springframework.stereotype.Component;
 
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
+import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.Staffmanagement;
+import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.to.StaffMemberEto;
 
 /**
  * TODO VMUSCHTE This type ...
@@ -24,7 +30,30 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   @Inject
   Salesmanagement salesmanagement;
 
+  @Inject
+  Staffmanagement staff;
+
   Map<String, Object> variables = new HashMap<String, Object>();
+
+  public ProcessInstance startOrderProcessAndSave(ProcessKeyName processKeyName, OrderEto order,
+      OrderPositionEto orderPosition) {
+
+    OrderEto savedOrder = this.salesmanagement.saveOrder(order);
+    Long savedOrderId = savedOrder.getId();
+    OrderPositionEto savedOrderPosition = orderPosition;
+    savedOrderPosition.setOrderId(savedOrderId);
+    savedOrderPosition = this.salesmanagement.saveOrderPosition(orderPosition);
+    Long savedOrderPositionId = savedOrderPosition.getId();
+
+    this.variables.put("orderId", savedOrderId);
+    this.variables.put("orderPositionId", savedOrderPositionId);
+    this.variables.put("orderProcessState", OrderPositionState.ORDERED.name());
+
+    String businessKey = "BK_" + savedOrderId + "_" + savedOrderPositionId;
+
+    ProcessInstance processInstance = startProcess(processKeyName.getKeyName(), businessKey, this.variables);
+    return processInstance;
+  }
 
   public ProcessInstance startOrderProcess(ProcessKeyName processKeyName, Long orderId, Long orderPositionId) {
 
@@ -38,11 +67,43 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     return processInstance;
   }
 
+  public void assignCook(ProcessInstance processInstance, Long cookId) {
+
+    Long orderPositionId =
+        (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+    OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+    orderPosition.setCookId(cookId);
+    orderPosition.setState(OrderPositionState.ACCEPTED);
+    this.salesmanagement.saveOrderPosition(orderPosition);
+
+    // a cook needs to be assigned to the updateOrderPrepared task, after an order has been accepted to be prepared by
+    // the cook in the task list
+    List<Task> tasks = this.processEngine.getTaskService().createTaskQuery().list();
+    int count = tasks.size();
+
+    StaffMemberEto staffMem = this.staff.findStaffMember(cookId);
+    staffMem.getName();
+    setAssigneeToCurrentTask(processInstance, staffMem.getName());
+
+    Task task = this.processEngine.getTaskService().createTaskQuery()
+        .processInstanceId(processInstance.getProcessInstanceId()).singleResult();
+
+  }
+
   public void acceptOrder(ProcessInstance processInstance) {
 
     Map<String, Object> variables = new HashMap();
     variables.put("orderProcessState", OrderPositionState.ACCEPTED.name());
+
+    Long orderPositionId =
+        (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+    OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+    orderPosition.setState(OrderPositionState.ACCEPTED);
+    this.salesmanagement.saveOrderPosition(orderPosition);
+
     completeCurrentTask(processInstance, variables);
+    assignCook(processInstance, 1L);
+
   }
 
   public void updateOrderPrepared(ProcessInstance processInstance) {
@@ -52,6 +113,20 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     Map<String, Object> variables = new HashMap();
     variables.put("orderProcessState", OrderPositionState.PREPARED.name());
     completeCurrentTask(processInstance, variables);
+
+    // modify orderposition
+
+  }
+
+  public void updateOrderServed(ProcessInstance processInstance) {
+
+    // Check if order has been prepared first --> create check method
+
+    Map<String, Object> variables = new HashMap();
+    variables.put("orderProcessState", OrderPositionState.DELIVERED.name());
+    completeCurrentTask(processInstance, variables);
+
+    // modify orderposition
   }
 
   public ProcessInstance getOrderProcess(Long orderId, Long orderPositionId) {

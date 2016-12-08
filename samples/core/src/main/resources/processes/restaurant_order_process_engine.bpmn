@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.3.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.1.1">
   <bpmn:collaboration id="CollaboraionRestaurantOrderProcess">
     <bpmn:participant id="Participant_Engine" name="Process Engine" processRef="RestaurantOrderProcessEngine" />
     <bpmn:participant id="Participant_Waiter" name="Waiter" processRef="RestaurantOrderProcessWaiter" />
@@ -26,11 +26,11 @@
         <bpmn:flowNodeRef>ServiceTask_CalculateBill</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>UserTask_ConfirmPayment</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>UserTask_CloseOrder</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>InterEvent_OrderPrepared</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>InterEvent_Served</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>InterEvent_BillDemanded</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>IntermediateThrowEvent_0gabvdv</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_OrderClosed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateThrowEvent_0p7h60z</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_Cook" name="cook">
         <bpmn:flowNodeRef>UserTask_AcceptOrder</bpmn:flowNodeRef>
@@ -43,9 +43,9 @@
     <bpmn:sequenceFlow id="SequenceFlow_06kjmb3" sourceRef="ServiceTask_CalculateBill" targetRef="UserTask_ConfirmPayment" />
     <bpmn:sequenceFlow id="SequenceFlow_089ef4u" sourceRef="InterEvent_BillDemanded" targetRef="ServiceTask_CalculateBill" />
     <bpmn:sequenceFlow id="SequenceFlow_02mlw9s" sourceRef="UserTask_UpdateServedOrder" targetRef="InterEvent_Served" />
-    <bpmn:sequenceFlow id="SequenceFlow_0xz10ev" sourceRef="InterEvent_OrderPrepared" targetRef="UserTask_UpdateServedOrder" />
+    <bpmn:sequenceFlow id="SequenceFlow_0xz10ev" sourceRef="IntermediateThrowEvent_0p7h60z" targetRef="UserTask_UpdateServedOrder" />
     <bpmn:sequenceFlow id="SequenceFlow_0tirrsq" sourceRef="UserTask_AcceptOrder" targetRef="InterEvent_Accepted" />
-    <bpmn:sequenceFlow id="SequenceFlow_1kcm47h" sourceRef="UserTask_UpdatePreparedOrder" targetRef="InterEvent_OrderPrepared" />
+    <bpmn:sequenceFlow id="SequenceFlow_1kcm47h" sourceRef="UserTask_UpdatePreparedOrder" targetRef="IntermediateThrowEvent_0p7h60z" />
     <bpmn:sequenceFlow id="SequenceFlow_0h5dyau" sourceRef="UserTask_ConfirmPayment" targetRef="IntermediateThrowEvent_0gabvdv" />
     <bpmn:startEvent id="StartEvent_OrderSaved" name="Order is saved">
       <bpmn:outgoing>SequenceFlow_0fhk1fv</bpmn:outgoing>
@@ -65,11 +65,6 @@
       <bpmn:incoming>SequenceFlow_08vk0ar</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1kcm47h</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:intermediateCatchEvent id="InterEvent_OrderPrepared" name="Oder is prepared">
-      <bpmn:incoming>SequenceFlow_1kcm47h</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0xz10ev</bpmn:outgoing>
-      <bpmn:messageEventDefinition messageRef="Message_0q8iwkf" />
-    </bpmn:intermediateCatchEvent>
     <bpmn:userTask id="UserTask_UpdateServedOrder" name="Serve order and confirm" camunda:candidateGroups="waiter">
       <bpmn:incoming>SequenceFlow_0xz10ev</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_02mlw9s</bpmn:outgoing>
@@ -102,6 +97,10 @@
     <bpmn:endEvent id="EndEvent_OrderClosed" name="Order is closed">
       <bpmn:incoming>SequenceFlow_1dsms55</bpmn:incoming>
     </bpmn:endEvent>
+    <bpmn:intermediateThrowEvent id="IntermediateThrowEvent_0p7h60z" name="Oder is prepared">
+      <bpmn:incoming>SequenceFlow_1kcm47h</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0xz10ev</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
   </bpmn:process>
   <bpmn:message id="Message_1ohxrp7" name="Message_0l6solu" />
   <bpmn:message id="Message_0wtr5y3" />
@@ -299,12 +298,6 @@
           <dc:Bounds x="373" y="526" width="0" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="IntermediateCatchEvent_13ks2ju_di" bpmnElement="InterEvent_OrderPrepared">
-        <dc:Bounds x="130" y="523" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="108" y="500" width="83" height="12" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0xz10ev_di" bpmnElement="SequenceFlow_0xz10ev">
         <di:waypoint xsi:type="dc:Point" x="166" y="541" />
         <di:waypoint xsi:type="dc:Point" x="245" y="541" />
@@ -330,8 +323,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1kcm47h_di" bpmnElement="SequenceFlow_1kcm47h">
         <di:waypoint xsi:type="dc:Point" x="148" y="618" />
-        <di:waypoint xsi:type="dc:Point" x="148" y="588" />
-        <di:waypoint xsi:type="dc:Point" x="148" y="588" />
         <di:waypoint xsi:type="dc:Point" x="148" y="559" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="163" y="588" width="0" height="0" />
@@ -738,6 +729,12 @@
           <dc:Bounds x="1202" y="457.5" width="0" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateThrowEvent_0p7h60z_di" bpmnElement="IntermediateThrowEvent_0p7h60z">
+        <dc:Bounds x="130" y="523" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="103" y="559" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

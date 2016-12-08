@@ -12,10 +12,7 @@ import org.springframework.stereotype.Component;
 import io.oasp.gastronomy.restaurant.processmanagement.logic.api.Processmanagement;
 
 /**
- * TODO VMUSCHTE This type ...
- *
- * @author VMUSCHTE
- * @since dev
+ * @author vmuschter
  */
 @Component
 abstract class ProcessmanagementImpl implements Processmanagement {
