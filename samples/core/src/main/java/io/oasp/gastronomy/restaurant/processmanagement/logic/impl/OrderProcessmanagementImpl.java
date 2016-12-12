@@ -1,16 +1,20 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
+import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
+import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessTasks;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
@@ -19,13 +23,14 @@ import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.Staffmanagement;
 import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.to.StaffMemberEto;
 
 /**
- * TODO VMUSCHTE This type ...
- *
- * @author VMUSCHTE
- * @since dev
+ * @author vmuschter
  */
 @Component
+@Named
 public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
+
+  /** Logger instance. */
+  private static final Logger LOG = LoggerFactory.getLogger(OrderProcessmanagementImpl.class);
 
   @Inject
   Salesmanagement salesmanagement;
@@ -35,7 +40,17 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
 
   Map<String, Object> variables = new HashMap<String, Object>();
 
-  public ProcessInstance startOrderProcessAndSave(ProcessKeyName processKeyName, OrderEto order,
+  /**
+   * Saves a new order with orderposition to the database and starts a new instance of the order process with the
+   * returned orderId and orderPositionId afterwards. The process definition (the model) to be executed is selected by
+   * the specific key of the order process model.
+   *
+   * @param processKeyName
+   * @param order
+   * @param orderPosition
+   * @return
+   */
+  public ProcessInstance startOrderProcess(ProcessKeyName processKeyName, OrderEto order,
       OrderPositionEto orderPosition) {
 
     OrderEto savedOrder = this.salesmanagement.saveOrder(order);
@@ -55,136 +70,152 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     return processInstance;
   }
 
-  public ProcessInstance startOrderProcess(ProcessKeyName processKeyName, Long orderId, Long orderPositionId) {
-
-    this.variables.put("orderId", orderId);
-    this.variables.put("orderPositionId", orderPositionId);
-    this.variables.put("orderProcessState", OrderPositionState.ORDERED.name());
-
-    String businessKey = "BK_" + orderId + "_" + orderPositionId;
-
-    ProcessInstance processInstance = startProcess(processKeyName.getKeyName(), businessKey, this.variables);
-    return processInstance;
-  }
-
+  /**
+   * A cookId is set to an orderposition and is set as assignee for the current user task that has to be done.
+   *
+   * @param processInstance
+   * @param cookId
+   */
   public void assignCook(ProcessInstance processInstance, Long cookId) {
 
     Long orderPositionId =
         (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
     OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
     orderPosition.setCookId(cookId);
-    orderPosition.setState(OrderPositionState.ACCEPTED);
     this.salesmanagement.saveOrderPosition(orderPosition);
 
     // a cook needs to be assigned to the updateOrderPrepared task, after an order has been accepted to be prepared by
     // the cook in the task list
-    List<Task> tasks = this.processEngine.getTaskService().createTaskQuery().list();
-    int count = tasks.size();
-
     StaffMemberEto staffMem = this.staff.findStaffMember(cookId);
     staffMem.getName();
     setAssigneeToCurrentTask(processInstance, staffMem.getName());
-
-    Task task = this.processEngine.getTaskService().createTaskQuery()
-        .processInstanceId(processInstance.getProcessInstanceId()).singleResult();
-
   }
 
+  /**
+   * An order will be accepted for preparation (the user task will be completed), the process state will be updated and
+   * the cook will be assigned to the following user task.
+   *
+   * @param processInstance
+   */
   public void acceptOrder(ProcessInstance processInstance) {
 
     Map<String, Object> variables = new HashMap();
     variables.put("orderProcessState", OrderPositionState.ACCEPTED.name());
 
-    Long orderPositionId =
-        (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
-    OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
-    orderPosition.setState(OrderPositionState.ACCEPTED);
-    this.salesmanagement.saveOrderPosition(orderPosition);
+    /*
+     * should set the new order position state ACCEPTED for order position, but need to modify
+     * verifyOrderPositionStateChange and verifyDrinkStateChange in UcManageOrderPositionImpl first - left out by now
+     *
+     */
+    // Long orderPositionId =
+    // (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+    // OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+    // orderPosition.setState(OrderPositionState.ACCEPTED);
+    // this.salesmanagement.saveOrderPosition(orderPosition);
 
     completeCurrentTask(processInstance, variables);
     assignCook(processInstance, 1L);
 
   }
 
+  /**
+   * An order will be marked as prepared (the user task will be completed) and the process state will be updated.
+   *
+   * @param processInstance
+   */
   public void updateOrderPrepared(ProcessInstance processInstance) {
 
-    // Check if order has been accepted first --> create check method
+    // Check if order has been accepted first
+    // (later on with the use of task forms this should not be necessary any longer because
+    // the task is only created when the previous one has been completed and the current task is known through the
+    // context of the task form that submits the completion-call)
+    Task checkTask =
+        checkPreviousTaskIsComplete(processInstance.getId(), ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+    if (checkTask == null) {
 
-    Map<String, Object> variables = new HashMap();
-    variables.put("orderProcessState", OrderPositionState.PREPARED.name());
-    completeCurrentTask(processInstance, variables);
+      Map<String, Object> variables = new HashMap();
+      variables.put("orderProcessState", OrderPositionState.PREPARED.name());
+      completeCurrentTask(processInstance, variables);
 
-    // modify orderposition
+      // modify order position state
+      Long orderPositionId =
+          (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+      OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+      orderPosition.setState(OrderPositionState.PREPARED);
+      this.salesmanagement.saveOrderPosition(orderPosition);
+    } else {
+      LOG.error("Unfinished task {}", checkTask);
+    }
 
   }
 
+  /**
+   * An order will be marked as served/delivered (the user task will be completed) and the process state will be
+   * updated.
+   *
+   * @param processInstance
+   */
   public void updateOrderServed(ProcessInstance processInstance) {
 
-    // Check if order has been prepared first --> create check method
+    // Check if order has been prepared first
+    Task checkTask =
+        checkPreviousTaskIsComplete(processInstance.getId(), ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+    if (checkTask == null) {
 
-    Map<String, Object> variables = new HashMap();
-    variables.put("orderProcessState", OrderPositionState.DELIVERED.name());
-    completeCurrentTask(processInstance, variables);
+      Map<String, Object> variables = new HashMap();
+      variables.put("orderProcessState", OrderPositionState.DELIVERED.name());
+      completeCurrentTask(processInstance, variables);
 
-    // modify orderposition
+      // modify order position state
+      Long orderPositionId =
+          (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+      OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+      orderPosition.setState(OrderPositionState.DELIVERED);
+
+      this.salesmanagement.saveOrderPosition(orderPosition);
+    } else {
+      LOG.error("Unfinished task {}", checkTask);
+    }
   }
 
-  public ProcessInstance getOrderProcess(Long orderId, Long orderPositionId) {
+  /**
+   * This method is used to handle the incoming message/request for the bill on which the process is waiting on.
+   *
+   * @param processInstance
+   */
+  public void handleBillRequest(ProcessInstance processInstance) {
 
-    // this.variables.put("orderId", orderId);
-    // this.variables.put("orderPositionId", orderPositionId);
-
-    ProcessInstance processInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
-        .variableValueEquals("orderId", orderId).variableValueEquals("orderPositionId", orderPositionId).singleResult();
-
-    // List<ProcessInstance> processInstances;
-    // Long processOrderPosition = null;
-    // ProcessInstance rightInstance = null;
-    // for (int i = 0; i < processInstances.size(); i++) {
-    // processOrderPosition = (Long) this.runtimeService.getVariable(processInstances.get(i).getId(),
-    // "orderPositionId");
-    // if (processOrderPosition == oderPositionId) {
-    // rightInstance = processInstances.get(i);
-    // }
-    // }
-
-    return processInstance;
-    // return processInstance = this.processEngine.getRuntimeService().createProcessInstanceQuery()
-    // .processInstanceBusinessKey("BK_" + orderId + "_" + orderPositionId).singleResult();
+    this.processEngine.getRuntimeService().correlateMessage("Message_Bill", processInstance.getBusinessKey());
   }
 
-  public void updateOrderProcessState(OrderPositionState state, ProcessInstance processInstance) {
+  /**
+   * This method is called automatically by the corresponding service task in the bpmn model
+   *
+   * @param delegateExecution
+   */
+  public void calculateBill(DelegateExecution delegateExecution) {
 
-    this.processEngine.getRuntimeService().setVariable(processInstance.getProcessInstanceId(), "orderProcessState",
-        state.name());
+    // get process execution information via delegateExecution
+    Long orderPositionId = (Long) delegateExecution.getVariable("orderPositionId");
+
+    // TODO calls/logic for creating bill
+    System.out.println("Calculating and creating bill");
   }
 
-  // public void completeCurrentTask(Long orderId, Long orderPositionId) {
-  //
-  // Task task = this.processEngine.getTaskService().createTaskQuery()
-  // .processInstanceId(getOrderProcess(orderId, orderPositionId).getProcessInstanceId()).singleResult();
-  //
-  // OrderPositionState state;
-  // String taskName = task.getName();
-  //
-  // switch (taskName) {
-  // case "UserTask_AcceptOrder":
-  // state = OrderPositionState.ACCEPTED;
-  // break;
-  // case "UserTask_UpdatePreparedOrder":
-  // state = OrderPositionState.PREPARED;
-  // break;
-  // case "UserTask_UpdateServedOrder":
-  // state = OrderPositionState.DELIVERED;
-  // default:
-  // state = OrderPositionState.ORDERED;
-  // break;
-  // }
-  //
-  // updateOrderProcessState(state, getOrderProcess(orderId, orderPositionId));
-  //
-  // this.processEngine.getRuntimeService().TaskService().complete(task.getId());
-  //
-  // }
+  /**
+   * This will return an active task of the given task name for the given process instance. It will return null if the
+   * task has already been completed (or not yet been created)
+   *
+   * @param processInstanceId
+   * @param taskName
+   * @return
+   */
+  public Task checkPreviousTaskIsComplete(String processInstanceId, String taskName) {
+
+    Task task = this.processEngine.getTaskService().createTaskQuery().processInstanceId(processInstanceId)
+        .taskDefinitionKey(taskName).active().singleResult();
+    return task;
+
+  }
 
 }

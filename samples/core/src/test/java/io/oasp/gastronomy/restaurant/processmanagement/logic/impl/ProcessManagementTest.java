@@ -96,6 +96,36 @@ public class ProcessManagementTest extends ComponentTest {
     assertThat(this.processEngine.getRuntimeService().getVariables(processInstanceId)).isNotEmpty();
   }
 
+  /**
+  *
+  */
+  @Test
+  public void testGetProcess() {
+
+    // given
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("testprocess").name("BPMN API Test Process").startEvent().name("Event received")
+            .userTask().name("Assign Approver").camundaAssignee("demo").endEvent().done();
+
+    // deploy process model
+    this.processEngine.getRepositoryService().createDeployment().addModelInstance("testprocess.bpmn", modelInstance)
+        .deploy();
+
+    Map<String, Object> variables = new HashMap<String, Object>();
+    variables.put("var1", 1);
+    variables.put("var2", 2);
+    // try to create a dummy process programmatically
+    ProcessInstance processInstance = this.processmanagement.startProcess("testprocess", "123", variables);
+    String processInstanceId = processInstance.getProcessInstanceId();
+
+    ProcessInstance getProcessInstance = this.processmanagement.getProcess(processInstanceId);
+    assertThat(getProcessInstance).isNotNull();
+
+    String getProcessInstanceId = getProcessInstance.getProcessInstanceId();
+    assertThat(processInstanceId).isEqualTo(getProcessInstanceId);
+
+  }
+
   @Test
   public void testStopProcess() {
 

@@ -99,8 +99,6 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
     Long orderPositionId = orderPosition.getId();
     String action;
 
-    // Map<String, Object> variables = new HashMap<String, Object>();
-
     if (orderPositionId == null) {
       action = "saved";
       Long offerId = orderPosition.getOfferId();
@@ -113,21 +111,11 @@ public class UcManageOrderPositionImpl extends AbstractOrderPositionUc implement
       OrderPositionEntity currentOrderPosition = getOrderPositionDao().find(orderPositionId);
       verifyUpdate(currentOrderPosition, orderPosition);
       action = "updated";
-      // TODO: bei einem Update herausfinden, welcher Prozessstatus erreicht ist!
-      // variables.put("orderProcessState", this.orderProcessmanagement.updateOrderProcessState());
     }
 
     OrderPositionEntity orderPositionEntity = getBeanMapper().map(orderPosition, OrderPositionEntity.class);
     orderPositionEntity = getOrderPositionDao().save(orderPositionEntity);
     LOG.debug("The order position with id {} has been {}.", orderPositionEntity.getId(), action);
-
-    // // TODO: Dokumentation
-    // if (action.equals("saved")) {
-    // variables.put("orderId", orderPositionEntity.getOrderId());
-    // variables.put("orderPositionId", orderPositionEntity.getId());
-    // variables.put("orderProcessState", OrderPositionState.ORDERED);
-    // this.orderProcessmanagement.startProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, variables);
-    // }
 
     return getBeanMapper().map(orderPositionEntity, OrderPositionEto.class);
   }

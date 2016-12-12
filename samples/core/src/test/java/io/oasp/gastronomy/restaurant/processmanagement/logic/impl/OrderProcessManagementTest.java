@@ -1,15 +1,12 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.ProcessEngineTests;
@@ -30,7 +27,6 @@ import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.impl.SalesManagementTest;
-import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.Staffmanagement;
 import io.oasp.module.test.common.base.ComponentTest;
 
 /**
@@ -46,16 +42,10 @@ public class OrderProcessManagementTest extends ComponentTest {
   private Salesmanagement salesManagement;
 
   @Inject
-  private Staffmanagement staffManagement;
-
-  @Inject
   private DbTestHelper dbTestHelper;
 
   @Inject
   private RuntimeService runtimeService;
-
-  @Inject
-  private RepositoryService repositoryService;
 
   @Inject
   private ProcessEngine processEngine;
@@ -63,8 +53,6 @@ public class OrderProcessManagementTest extends ComponentTest {
   private SalesManagementTest salesmanagementTest;
 
   private OrderProcessmanagementImpl orderProcessmanagement;
-
-  // private List<ProcessInstance> processInstancesList = new ArrayList<ProcessInstance>();
 
   /**
    * @param orderProcessmanagement new value of {@link Inject}.
@@ -85,19 +73,14 @@ public class OrderProcessManagementTest extends ComponentTest {
         PermissionConstants.SAVE_ORDER_POSITION, PermissionConstants.SAVE_ORDER, PermissionConstants.FIND_OFFER,
         PermissionConstants.FIND_STAFF_MEMBER);
     this.dbTestHelper.setMigrationVersion("0002");
+    // do not reset database because camunda tables are then missing
     // this.dbTestHelper.resetDatabase();
 
     this.salesmanagementTest = new SalesManagementTest();
     this.salesmanagementTest.setSalesManagement(this.salesManagement);
-    // start a first instance of a standard_order_process
-    Map<String, Object> variables = new HashMap<String, Object>();
-    variables.put("orderId", 2L);
-    variables.put("orderPositionId", 999L);
-    // ProcessInstance processInstance =
-    // this.runtimeService.startProcessInstanceByKey(ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), variables);
 
-    ProcessInstance firstInstance = this.runtimeService.startProcessInstanceByKey(
-        ProcessKeyName.STANDARD_ORDER_PROCESS.getKeyName(), "BK_" + 2 + "_" + 999, variables);
+    // start a first instance of an order process if needed
+    getNewProcessInstance();
 
   }
 
@@ -106,8 +89,8 @@ public class OrderProcessManagementTest extends ComponentTest {
    */
   @After
   public void tearDown() {
-    // delete all process instances
 
+    // delete all process instances
     List<ProcessInstance> processInstancesList =
         this.processEngine.getRuntimeService().createProcessInstanceQuery().active().list();
 
@@ -118,14 +101,18 @@ public class OrderProcessManagementTest extends ComponentTest {
     TestUtil.logout();
   }
 
+  /**
+   * Tests if the {@link ProcessInstance} is started correctly. The test focuses on starting an order process and saving
+   * a new {@link OrderEto} and {@link OrderPositionEto}. Test data is created using {@link SalesManagementTest}.
+   */
   @Test
-  public void testStartOrderProcessAndSave() {
+  public void testStartOrderProcess() {
 
     OrderEto order = this.salesmanagementTest.prepareNewOrderEto();
     OrderPositionEto orderPosition = this.salesmanagementTest.prepareNewOrderPositionEto(order);
 
-    ProcessInstance processInstance = this.orderProcessmanagement
-        .startOrderProcessAndSave(ProcessKeyName.STANDARD_ORDER_PROCESS, order, orderPosition);
+    ProcessInstance processInstance =
+        this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, order, orderPosition);
 
     String pId = processInstance.getProcessInstanceId();
     // check if process variables exist with correct value
@@ -145,142 +132,11 @@ public class OrderProcessManagementTest extends ComponentTest {
 
   }
 
-  // @Test
-  // public void testStartOrderProcess() {
-  //
-  // try {
-  // // given: an already existing (saved) order and orderposition
-  // OrderEto order = this.salesmanagementTest.createNewOrderEto();
-  // OrderPositionEto orderPosition = this.salesmanagementTest.createNewOrderPositionEto(order);
-  // Long orderId = order.getId();
-  // Long orderPositionId = orderPosition.getId();
-  //
-  // // start a new order process
-  // ProcessInstance processInstance = this.orderProcessmanagement
-  // .startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId, orderPositionId);
-  //
-  // String pId = processInstance.getProcessInstanceId();
-  //
-  // // check if process variables exist with correct value
-  // Long processOrderId = (Long) this.runtimeService.getVariable(pId, "orderId");
-  // assertThat(processOrderId).isEqualTo(orderId);
-  // Long processOrderPositionId = (Long) this.runtimeService.getVariable(pId, "orderPositionId");
-  // assertThat(processOrderPositionId).isEqualTo(orderPositionId);
-  //
-  // } catch (ConstraintViolationException e) {
-  // // BV is really painful as you need such code to see the actual error in JUnit.
-  // StringBuilder sb = new StringBuilder(64);
-  // sb.append("Constraints violated:");
-  // for (ConstraintViolation<?> v : e.getConstraintViolations()) {
-  // sb.append("\n");
-  // sb.append(v.getPropertyPath());
-  // sb.append(":");
-  // sb.append(v.getMessage());
-  // }
-  // throw new IllegalStateException(sb.toString(), e);
-  // }
-  //
-  // }
-
-  // @Test
-  // public void testGetOrderProcess() {
-  //
-  // try {
-  // // given
-  // ProcessInstance processInstance = getNewProcessInstance();
-  // Long orderId = (Long) this.runtimeService.getVariable(processInstance.getProcessInstanceId(), "orderId");
-  // Long orderPositionId =
-  // (Long) this.runtimeService.getVariable(processInstance.getProcessInstanceId(), "orderPositionId");
-  //
-  // String processInstanceId = processInstance.getProcessInstanceId();
-  //
-  // // get orderprocess
-  // // ProcessInstance getProcessInstance = this.orderProcessmanagement.getOrderProcess(orderId, orderPositionId);
-  // ProcessInstance getProcessInstance =
-  // this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
-  // assertThat(getProcessInstance).isNotNull();
-  // String getProcessInstanceId = getProcessInstance.getProcessInstanceId();
-  //
-  // assertThat(processInstanceId).isEqualTo(getProcessInstanceId);
-  //
-  // List<Execution> currentExecutions =
-  // this.runtimeService.createExecutionQuery().processInstanceId(processInstanceId).list();
-  //
-  // // assertThat(processInstance).isSameAs(getProcessInstance);
-  //
-  // // assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderId")).isNotNull();
-  // // assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderPositionId")).isNotNull();
-  //
-  // // Variablenwert auslesen
-  // Long getOrderId = (Long) this.runtimeService.getVariable(getProcessInstanceId, "orderId");
-  // Long getOrderPositionId = (Long) this.runtimeService.getVariable(getProcessInstanceId, "orderPositionId");
-  // // assert
-  // assertThat(getOrderId).isEqualTo(orderId);
-  // assertThat(getOrderPositionId).isEqualTo(orderPositionId);
-  //
-  // // check orderprocess state
-  // assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderProcessState"))
-  // .isEqualTo(OrderPositionState.ORDERED.name());
-  //
-  // // check if orderprocess is started and waiting at first task
-  // ProcessEngineTests
-  // .assertThat(
-  // this.runtimeService.createProcessInstanceQuery().processInstanceId(getProcessInstanceId).singleResult())
-  // .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
-  //
-  // // this.orderProcessmanagement.setAssigneeToTask("Carl Cook", order.getId(), orderPosition.getId());
-  //
-  // // ProcessEngineTests
-  // // .assertThat(this.runtimeService.createProcessInstanceQuery().processInstanceId(getPI.getProcessInstanceId())
-  // // .singleResult())
-  // // .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName()).task().isAssignedTo("Carl Cook");
-  //
-  // this.orderProcessmanagement.acceptOrder(getProcessInstance);
-  // // check orderprocess state
-  // assertThat(this.runtimeService.getVariable(getProcessInstanceId, "orderProcessState"))
-  // .isEqualTo(OrderPositionState.ACCEPTED.name());
-  //
-  // ProcessEngineTests
-  // .assertThat(
-  // this.runtimeService.createProcessInstanceQuery().processInstanceId(getProcessInstanceId).singleResult())
-  // .isStarted().hasPassed(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
-  //
-  // ProcessEngineTests
-  // .assertThat(
-  // this.runtimeService.createProcessInstanceQuery().processInstanceId(getProcessInstanceId).singleResult())
-  // .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
-  //
-  // this.orderProcessmanagement.updateOrderPrepared(getProcessInstance);
-  //
-  // ProcessEngineTests
-  // .assertThat(
-  // this.runtimeService.createProcessInstanceQuery().processInstanceId(getProcessInstanceId).singleResult())
-  // .isStarted().hasPassed(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
-  //
-  // this.runtimeService.correlateMessage("Message_Ready", getProcessInstance.getBusinessKey());
-  //
-  // ProcessEngineTests
-  // .assertThat(
-  // this.runtimeService.createProcessInstanceQuery().processInstanceId(getProcessInstanceId).singleResult())
-  // .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
-  //
-  // } catch (ConstraintViolationException e) {
-  // // BV is really painful as you need such code to see the actual error in JUnit.
-  // StringBuilder sb = new StringBuilder(64);
-  // sb.append("Constraints violated:");
-  // for (ConstraintViolation<?> v : e.getConstraintViolations()) {
-  // sb.append("\n");
-  // sb.append(v.getPropertyPath());
-  // sb.append(":");
-  // sb.append(v.getMessage());
-  // }
-  // throw new IllegalStateException(sb.toString(), e);
-  // }
-  //
-  // }
-
+  /**
+   * Tests if the {@link ProcessInstance} / a running order process can be stepped through correctly.
+   */
   @Test
-  public void testOrderProcessFlow() {
+  public void testCorrectOrderProcessFlow() {
 
     try {
       // given
@@ -299,6 +155,9 @@ public class OrderProcessManagementTest extends ComponentTest {
       assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
           .isEqualTo(OrderPositionState.ORDERED.name());
 
+      // TODO check that order state is open
+      // TODO check that orderpositionstate is ordered
+
       // check that no cook has been assigned to the orderposition yet (and in that case also not to the next task)
       OrderPositionEto orderPosition = this.salesManagement
           .findOrderPosition((Long) this.runtimeService.getVariable(processInstanceId, "orderPositionId"));
@@ -313,9 +172,12 @@ public class OrderProcessManagementTest extends ComponentTest {
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
           .isStarted().hasPassed(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
 
-      // check the the new process state is now "accepted" -> means in preparation
-      assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
-          .isEqualTo(OrderPositionState.ACCEPTED.name());
+      /*
+       * check the the new process state is now "accepted" -> means in preparation (still left out because of the
+       * required additional state checks in UCManageOrderPositionImpl)
+       */
+      // assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
+      // .isEqualTo(OrderPositionState.ACCEPTED.name());
 
       // check that now a cook is set for the orderposition
       orderPosition = this.salesManagement
@@ -337,14 +199,17 @@ public class OrderProcessManagementTest extends ComponentTest {
       // step on in the process by confirming that order is prepared and ready to be served
       this.orderProcessmanagement.updateOrderPrepared(processInstance);
 
-      // check that the update order is prepared has been made
+      // check that the update for a prepared order has been made
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
           .isStarted().hasPassed(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
 
-      // this.runtimeService.correlateMessage("Message_Ready", processInstance.getBusinessKey());
+      // check that orderposition is in a new state
+      assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
+          .isEqualTo(OrderPositionState.PREPARED.name());
 
+      // check that the process is waiting for the confirmation of the order to be delivered
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
@@ -352,6 +217,36 @@ public class OrderProcessManagementTest extends ComponentTest {
 
       // complete the serving of the order
       this.orderProcessmanagement.updateOrderServed(processInstance);
+
+      // check that the update for a delivered order has been made
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().hasPassed(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+
+      // check that orderposition is in a new state
+      assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
+          .isEqualTo(OrderPositionState.DELIVERED.name());
+
+      // check that the process is waiting for the bill to be requested
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isWaitingFor("Message_Bill");
+
+      this.orderProcessmanagement.handleBillRequest(processInstance);
+
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().hasPassed(ProcessTasks.SERVICETASK_CALCULATEBILL.getTaskName());
+
+      // TODO UserTask_ConfirmPayment
+      // TODO check that orderposition is in a new state
+      // TODO UserTask_CloseOrder
+      // TODO check that orderposition is in a new state
+      // TODO check that order is in a new state
+      // TODO process has ended
 
     } catch (ConstraintViolationException e) {
       // BV is really painful as you need such code to see the actual error in JUnit.
@@ -365,26 +260,33 @@ public class OrderProcessManagementTest extends ComponentTest {
       }
       throw new IllegalStateException(sb.toString(), e);
     }
-    // TODO check that restaurant is in a new state
+
   }
 
+  /**
+   * Tests if the {@link ProcessInstance} / a running order process can be stepped through incorrectly.
+   */
+  @Test
+  public void testIncorrectOrderProcessFlow() {
+
+    // TODO try a wrong activity order
+    // start process
+    // try to mark an order as prepared before it has been accepted
+    // try to close an order before the order has been payed ...
+  }
+
+  /**
+   * Creates a new {@link OrderEto} and {@link OrderPositionEto} and passes them to the startOrderProcess method.
+   * Returns a new {@link ProcessInstance} which holds the order information as process variables.
+   */
   private ProcessInstance getNewProcessInstance() {
 
     OrderEto order = this.salesmanagementTest.prepareNewOrderEto();
     OrderPositionEto orderPosition = this.salesmanagementTest.prepareNewOrderPositionEto(order);
 
     // start order process
-    ProcessInstance processInstance = this.orderProcessmanagement
-        .startOrderProcessAndSave(ProcessKeyName.STANDARD_ORDER_PROCESS, order, orderPosition);
-
-    // OrderEto order = this.salesmanagementTest.createNewOrderEto();
-    // OrderPositionEto orderPosition = this.salesmanagementTest.createNewOrderPositionEto(order);
-    // Long orderId = order.getId();
-    // Long orderPositionId = orderPosition.getId();
-    //
-    // // start orderprocess
-    // ProcessInstance processInstance =
-    // this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, orderId, orderPositionId);
+    ProcessInstance processInstance =
+        this.orderProcessmanagement.startOrderProcess(ProcessKeyName.STANDARD_ORDER_PROCESS, order, orderPosition);
 
     return processInstance;
   }

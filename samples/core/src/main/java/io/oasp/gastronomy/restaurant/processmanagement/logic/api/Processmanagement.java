@@ -16,6 +16,8 @@ public interface Processmanagement {
 
   public ProcessInstance startProcess(String processKeyName, String businessKey, Map<String, Object> variables);
 
+  public ProcessInstance getProcess(String processInstanceId);
+
   public void stopProcess(String processInstanceId, String deleteReason);
 
   public void setAssigneeToCurrentTask(ProcessInstance processInstance, String assignee);

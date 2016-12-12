@@ -78,7 +78,7 @@
       <bpmn:outgoing>SequenceFlow_089ef4u</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_0y8w2rp" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:serviceTask id="ServiceTask_CalculateBill" name="Calculate Bill&#10;" camunda:delegateExpression="${executeServiceTask}">
+    <bpmn:serviceTask id="ServiceTask_CalculateBill" name="Calculate Bill&#10;" camunda:expression="${orderProcessmanagementImpl.calculateBill(execution)}">
       <bpmn:incoming>SequenceFlow_089ef4u</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06kjmb3</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -732,7 +732,7 @@
       <bpmndi:BPMNShape id="IntermediateThrowEvent_0p7h60z_di" bpmnElement="IntermediateThrowEvent_0p7h60z">
         <dc:Bounds x="130" y="523" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="103" y="559" width="90" height="20" />
+          <dc:Bounds x="103" y="503" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
