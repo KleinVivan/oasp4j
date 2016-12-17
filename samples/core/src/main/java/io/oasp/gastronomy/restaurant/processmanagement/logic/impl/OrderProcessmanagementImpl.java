@@ -13,10 +13,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.OrderProcessTasks;
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
-import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessTasks;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
+import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderState;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
+import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderCto;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
 import io.oasp.gastronomy.restaurant.staffmanagement.logic.api.Staffmanagement;
@@ -92,8 +94,8 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   }
 
   /**
-   * An order will be accepted for preparation (the user task will be completed), the process state will be updated and
-   * the cook will be assigned to the following user task.
+   * An orderpsoition will be accepted for preparation (the user task will be completed), the process state will be
+   * updated and the cook will be assigned to the following user task.
    *
    * @param processInstance
    */
@@ -119,7 +121,8 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   }
 
   /**
-   * An order will be marked as prepared (the user task will be completed) and the process state will be updated.
+   * An orderposition will be marked as prepared (the user task will be completed) and the process state will be
+   * updated.
    *
    * @param processInstance
    */
@@ -130,12 +133,11 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     // the task is only created when the previous one has been completed and the current task is known through the
     // context of the task form that submits the completion-call)
     Task checkTask =
-        checkPreviousTaskIsComplete(processInstance.getId(), ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+        checkPreviousTaskIsComplete(processInstance.getId(), OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
     if (checkTask == null) {
 
       Map<String, Object> variables = new HashMap();
       variables.put("orderProcessState", OrderPositionState.PREPARED.name());
-      completeCurrentTask(processInstance, variables);
 
       // modify order position state
       Long orderPositionId =
@@ -143,6 +145,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
       OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
       orderPosition.setState(OrderPositionState.PREPARED);
       this.salesmanagement.saveOrderPosition(orderPosition);
+      completeCurrentTask(processInstance, variables);
     } else {
       LOG.error("Unfinished task {}", checkTask);
     }
@@ -150,7 +153,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   }
 
   /**
-   * An order will be marked as served/delivered (the user task will be completed) and the process state will be
+   * An orderposition will be marked as served/delivered (the user task will be completed) and the process state will be
    * updated.
    *
    * @param processInstance
@@ -158,13 +161,12 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   public void updateOrderServed(ProcessInstance processInstance) {
 
     // Check if order has been prepared first
-    Task checkTask =
-        checkPreviousTaskIsComplete(processInstance.getId(), ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+    Task checkTask = checkPreviousTaskIsComplete(processInstance.getId(),
+        OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
     if (checkTask == null) {
 
       Map<String, Object> variables = new HashMap();
       variables.put("orderProcessState", OrderPositionState.DELIVERED.name());
-      completeCurrentTask(processInstance, variables);
 
       // modify order position state
       Long orderPositionId =
@@ -173,6 +175,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
       orderPosition.setState(OrderPositionState.DELIVERED);
 
       this.salesmanagement.saveOrderPosition(orderPosition);
+      completeCurrentTask(processInstance, variables);
     } else {
       LOG.error("Unfinished task {}", checkTask);
     }
@@ -200,6 +203,57 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
 
     // TODO calls/logic for creating bill
     System.out.println("Calculating and creating bill");
+  }
+
+  /**
+   * An orderposition will be marked as payed (the user task will be completed) and the process state will be updated.
+   *
+   * @param processInstance
+   */
+  public void confirmPayment(ProcessInstance processInstance) {
+
+    Map<String, Object> variables = new HashMap();
+    variables.put("orderProcessState", OrderPositionState.PAYED.name());
+
+    // modify order position state
+    Long orderPositionId =
+        (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+    OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+    orderPosition.setState(OrderPositionState.PAYED);
+
+    this.salesmanagement.saveOrderPosition(orderPosition);
+    completeCurrentTask(processInstance, variables);
+
+  }
+
+  /**
+   * An order will be marked as closed (the user task will be completed) and the process state will be updated.
+   *
+   * @param processInstance
+   */
+  public void closeOrder(ProcessInstance processInstance) {
+
+    // Check if order has been payed first
+    Task checkTask =
+        checkPreviousTaskIsComplete(processInstance.getId(), OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
+    if (checkTask == null) {
+      Map<String, Object> variables = new HashMap();
+      variables.put("orderProcessState", OrderState.CLOSED.name());
+
+      // modify order position state
+      Long orderId = (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderId");
+      OrderEto orderEto = this.salesmanagement.findOrder(orderId);
+      OrderCto order = this.salesmanagement.findOrderCto(orderEto);
+
+      orderEto.setState(OrderState.CLOSED);
+      order.setOrder(orderEto);
+
+      this.salesmanagement.saveOrder(order);
+      completeCurrentTask(processInstance, variables);
+    } else {
+      LOG.error("Unfinished task {}", checkTask);
+    }
+
   }
 
   /**

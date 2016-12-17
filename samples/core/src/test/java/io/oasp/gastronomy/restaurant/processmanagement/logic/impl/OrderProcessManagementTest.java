@@ -20,9 +20,10 @@ import io.oasp.gastronomy.restaurant.SpringBootApp;
 import io.oasp.gastronomy.restaurant.general.common.DbTestHelper;
 import io.oasp.gastronomy.restaurant.general.common.TestUtil;
 import io.oasp.gastronomy.restaurant.general.common.api.constants.PermissionConstants;
+import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.OrderProcessTasks;
 import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessKeyName;
-import io.oasp.gastronomy.restaurant.processmanagement.common.api.datatype.ProcessTasks;
 import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderPositionState;
+import io.oasp.gastronomy.restaurant.salesmanagement.common.api.datatype.OrderState;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.Salesmanagement;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderEto;
 import io.oasp.gastronomy.restaurant.salesmanagement.logic.api.to.OrderPositionEto;
@@ -149,18 +150,25 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().isWaitingAt(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+          .isStarted().isWaitingAt(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+
+      OrderPositionEto orderPosition = this.salesManagement
+          .findOrderPosition((Long) this.runtimeService.getVariable(processInstanceId, "orderPositionId"));
+      OrderEto order = this.salesManagement.findOrder(orderPosition.getOrderId());
 
       // check that order process state is ordered
       assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
           .isEqualTo(OrderPositionState.ORDERED.name());
 
-      // TODO check that order state is open
-      // TODO check that orderpositionstate is ordered
+      // check that order state is open
+      OrderState orderState = order.getState();
+      assertThat(orderState).isEqualTo(OrderState.OPEN);
+
+      // check that orderpositionstate is ordered
+      OrderPositionState orderPositionState = orderPosition.getState();
+      assertThat(orderPositionState).isEqualTo(OrderPositionState.ORDERED);
 
       // check that no cook has been assigned to the orderposition yet (and in that case also not to the next task)
-      OrderPositionEto orderPosition = this.salesManagement
-          .findOrderPosition((Long) this.runtimeService.getVariable(processInstanceId, "orderPositionId"));
       assertThat(orderPosition.getCookId()).isNull();
 
       // step on in the process by accepting to prepare the order, that is connected to the process
@@ -170,7 +178,7 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().hasPassed(ProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+          .isStarted().hasPassed(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
 
       /*
        * check the the new process state is now "accepted" -> means in preparation (still left out because of the
@@ -188,13 +196,13 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+          .isStarted().isWaitingAt(OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
 
       // check that the user task "Update Prepared Order" is now assigned to that cook
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isWaitingAt(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName()).task().isAssignedTo("cook");
+          .isWaitingAt(OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName()).task().isAssignedTo("cook");
 
       // step on in the process by confirming that order is prepared and ready to be served
       this.orderProcessmanagement.updateOrderPrepared(processInstance);
@@ -203,17 +211,23 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().hasPassed(ProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+          .isStarted().hasPassed(OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
 
-      // check that orderposition is in a new state
+      // check that order process state is in a new state
       assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
           .isEqualTo(OrderPositionState.PREPARED.name());
+
+      // check that orderposition state has changed too
+      orderPosition = this.salesManagement
+          .findOrderPosition((Long) this.runtimeService.getVariable(processInstanceId, "orderPositionId"));
+      orderPositionState = orderPosition.getState();
+      assertThat(orderPositionState).isEqualTo(OrderPositionState.PREPARED);
 
       // check that the process is waiting for the confirmation of the order to be delivered
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().isWaitingAt(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+          .isStarted().isWaitingAt(OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
 
       // complete the serving of the order
       this.orderProcessmanagement.updateOrderServed(processInstance);
@@ -222,11 +236,16 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().hasPassed(ProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+          .isStarted().hasPassed(OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
 
-      // check that orderposition is in a new state
+      // check that order process state is in a new state
       assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
           .isEqualTo(OrderPositionState.DELIVERED.name());
+      // check that orderposition state has changed too
+      orderPosition = this.salesManagement
+          .findOrderPosition((Long) this.runtimeService.getVariable(processInstanceId, "orderPositionId"));
+      orderPositionState = orderPosition.getState();
+      assertThat(orderPositionState).isEqualTo(OrderPositionState.DELIVERED);
 
       // check that the process is waiting for the bill to be requested
       ProcessEngineTests
@@ -239,14 +258,39 @@ public class OrderProcessManagementTest extends ComponentTest {
       ProcessEngineTests
           .assertThat(
               this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
-          .isStarted().hasPassed(ProcessTasks.SERVICETASK_CALCULATEBILL.getTaskName());
+          .isStarted().hasPassed(OrderProcessTasks.SERVICETASK_CALCULATEBILL.getTaskName());
 
-      // TODO UserTask_ConfirmPayment
-      // TODO check that orderposition is in a new state
-      // TODO UserTask_CloseOrder
-      // TODO check that orderposition is in a new state
-      // TODO check that order is in a new state
-      // TODO process has ended
+      // check that the process is waiting for the input of payment data and the payment confirmation
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().isWaitingAt(OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
+
+      this.orderProcessmanagement.confirmPayment(processInstance);
+      // check that orderposition is in a new state
+      assertThat(this.runtimeService.getVariable(processInstanceId, "orderProcessState"))
+          .isEqualTo(OrderPositionState.PAYED.name());
+      // check that orderposition state has changed too
+      orderPosition = this.salesManagement
+          .findOrderPosition((Long) this.runtimeService.getVariable(processInstanceId, "orderPositionId"));
+      orderPositionState = orderPosition.getState();
+      assertThat(orderPositionState).isEqualTo(OrderPositionState.PAYED);
+
+      // check that the process is waiting for the final closing of the order
+      ProcessEngineTests
+          .assertThat(
+              this.runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult())
+          .isStarted().isWaitingAt(OrderProcessTasks.USERTASK_CLOSEORDER.getTaskName());
+
+      this.orderProcessmanagement.closeOrder(processInstance);
+
+      // check that order state has changed too
+      order = this.salesManagement.findOrder(order.getId());
+      orderState = order.getState();
+      assertThat(orderState).isEqualTo(OrderState.CLOSED);
+
+      // check that process is ended
+      ProcessEngineTests.assertThat(processInstance).isEnded();
 
     } catch (ConstraintViolationException e) {
       // BV is really painful as you need such code to see the actual error in JUnit.
@@ -269,10 +313,21 @@ public class OrderProcessManagementTest extends ComponentTest {
   @Test
   public void testIncorrectOrderProcessFlow() {
 
-    // TODO try a wrong activity order
+    // try a wrong activity order
     // start process
+    ProcessInstance processInstance = getNewProcessInstance();
+
     // try to mark an order as prepared before it has been accepted
+    this.orderProcessmanagement.updateOrderPrepared(processInstance);
+    // check that process is still waiting at the previous task
+    ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+    this.orderProcessmanagement.acceptOrder(processInstance);
+    this.orderProcessmanagement.updateOrderPrepared(processInstance);
+    this.orderProcessmanagement.updateOrderServed(processInstance);
+
     // try to close an order before the order has been payed ...
+    this.orderProcessmanagement.closeOrder(processInstance);
+    ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
   }
 
   /**
