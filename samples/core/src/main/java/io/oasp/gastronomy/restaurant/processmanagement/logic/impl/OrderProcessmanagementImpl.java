@@ -1,14 +1,17 @@
 package io.oasp.gastronomy.restaurant.processmanagement.logic.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
+import org.camunda.bpm.engine.history.HistoricTaskInstance;
+import org.camunda.bpm.engine.history.HistoricTaskInstanceQuery;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -132,9 +135,8 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     // (later on with the use of task forms this should not be necessary any longer because
     // the task is only created when the previous one has been completed and the current task is known through the
     // context of the task form that submits the completion-call)
-    Task checkTask =
-        checkPreviousTaskIsComplete(processInstance.getId(), OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
-    if (checkTask == null) {
+
+    if (checkPreviousTaskIsComplete(processInstance.getId(), OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName())) {
 
       Map<String, Object> variables = new HashMap();
       variables.put("orderProcessState", OrderPositionState.PREPARED.name());
@@ -147,7 +149,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
       this.salesmanagement.saveOrderPosition(orderPosition);
       completeCurrentTask(processInstance, variables);
     } else {
-      LOG.error("Unfinished task {}", checkTask);
+      LOG.error("Unfinished task {}", OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
     }
 
   }
@@ -161,9 +163,9 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   public void updateOrderServed(ProcessInstance processInstance) {
 
     // Check if order has been prepared first
-    Task checkTask = checkPreviousTaskIsComplete(processInstance.getId(),
-        OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
-    if (checkTask == null) {
+
+    if (checkPreviousTaskIsComplete(processInstance.getId(),
+        OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName())) {
 
       Map<String, Object> variables = new HashMap();
       variables.put("orderProcessState", OrderPositionState.DELIVERED.name());
@@ -177,7 +179,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
       this.salesmanagement.saveOrderPosition(orderPosition);
       completeCurrentTask(processInstance, variables);
     } else {
-      LOG.error("Unfinished task {}", checkTask);
+      LOG.error("Unfinished task {}", OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
     }
   }
 
@@ -212,18 +214,23 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
    */
   public void confirmPayment(ProcessInstance processInstance) {
 
-    Map<String, Object> variables = new HashMap();
-    variables.put("orderProcessState", OrderPositionState.PAYED.name());
+    // TODO and check that a corresponding bill exists
+    if (checkPreviousTaskIsComplete(processInstance.getId(),
+        OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName())) {
+      Map<String, Object> variables = new HashMap();
+      variables.put("orderProcessState", OrderPositionState.PAYED.name());
 
-    // modify order position state
-    Long orderPositionId =
-        (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
-    OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
-    orderPosition.setState(OrderPositionState.PAYED);
+      // modify order position state
+      Long orderPositionId =
+          (Long) this.processEngine.getRuntimeService().getVariable(processInstance.getId(), "orderPositionId");
+      OrderPositionEto orderPosition = this.salesmanagement.findOrderPosition(orderPositionId);
+      orderPosition.setState(OrderPositionState.PAYED);
 
-    this.salesmanagement.saveOrderPosition(orderPosition);
-    completeCurrentTask(processInstance, variables);
-
+      this.salesmanagement.saveOrderPosition(orderPosition);
+      completeCurrentTask(processInstance, variables);
+    } else {
+      LOG.error("Unfinished task {}", OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+    }
   }
 
   /**
@@ -234,9 +241,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   public void closeOrder(ProcessInstance processInstance) {
 
     // Check if order has been payed first
-    Task checkTask =
-        checkPreviousTaskIsComplete(processInstance.getId(), OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
-    if (checkTask == null) {
+    if (checkPreviousTaskIsComplete(processInstance.getId(), OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName())) {
       Map<String, Object> variables = new HashMap();
       variables.put("orderProcessState", OrderState.CLOSED.name());
 
@@ -251,7 +256,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
       this.salesmanagement.saveOrder(order);
       completeCurrentTask(processInstance, variables);
     } else {
-      LOG.error("Unfinished task {}", checkTask);
+      LOG.error("Unfinished task {}", OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
     }
 
   }
@@ -264,12 +269,25 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
    * @param taskName
    * @return
    */
-  public Task checkPreviousTaskIsComplete(String processInstanceId, String taskName) {
+  public boolean checkPreviousTaskIsComplete(String processInstanceId, String taskName) {
 
-    Task task = this.processEngine.getTaskService().createTaskQuery().processInstanceId(processInstanceId)
-        .taskDefinitionKey(taskName).active().singleResult();
-    return task;
+    boolean isCompleted = false;
+    // Task task = this.processEngine.getTaskService().createTaskQuery().processInstanceId(processInstanceId)
+    // .taskDefinitionKey(taskName).active().singleResult();
 
+    HistoryService historyService = this.processEngine.getHistoryService();
+    HistoricTaskInstanceQuery myHistoryTasksQuery =
+        historyService.createHistoricTaskInstanceQuery().processInstanceId(processInstanceId).finished();
+    List<HistoricTaskInstance> finishedTasks = myHistoryTasksQuery.list();
+
+    for (HistoricTaskInstance histTaskInst : finishedTasks) {
+      String histName = histTaskInst.getTaskDefinitionKey();
+      if (histName.equals(taskName)) {
+        isCompleted = true;
+      }
+    }
+
+    return isCompleted;
   }
 
 }

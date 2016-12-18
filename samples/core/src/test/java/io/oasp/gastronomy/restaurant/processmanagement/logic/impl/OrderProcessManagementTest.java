@@ -319,15 +319,41 @@ public class OrderProcessManagementTest extends ComponentTest {
 
     // try to mark an order as prepared before it has been accepted
     this.orderProcessmanagement.updateOrderPrepared(processInstance);
+
     // check that process is still waiting at the previous task
     ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
-    this.orderProcessmanagement.acceptOrder(processInstance);
-    this.orderProcessmanagement.updateOrderPrepared(processInstance);
-    this.orderProcessmanagement.updateOrderServed(processInstance);
 
-    // try to close an order before the order has been payed ...
+    this.orderProcessmanagement.acceptOrder(processInstance);
+
+    // try to mark an order as served before it has been prepared
+    this.orderProcessmanagement.updateOrderServed(processInstance);
+    // check that process is still waiting at the previous task
+    ProcessEngineTests.assertThat(processInstance)
+        .isWaitingAt(OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+    this.orderProcessmanagement.updateOrderPrepared(processInstance);
+
+    // try to confirm the payment before the order has been served
+    this.orderProcessmanagement.confirmPayment(processInstance);
+    // check that process is still waiting at the previous task
+    ProcessEngineTests.assertThat(processInstance)
+        .isWaitingAt(OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+
+    this.orderProcessmanagement.updateOrderServed(processInstance);
+    this.orderProcessmanagement.handleBillRequest(processInstance);
+
+    // try to close an order before the order has been payed
     this.orderProcessmanagement.closeOrder(processInstance);
+    // check that process is still waiting at the previous task
     ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
+    this.orderProcessmanagement.confirmPayment(processInstance);
+
+    // check that process is now waiting to be closed
+    ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_CLOSEORDER.getTaskName());
+    this.orderProcessmanagement.closeOrder(processInstance);
+    // check that process is ended
+    ProcessEngineTests.assertThat(processInstance).isEnded();
+
   }
 
   /**

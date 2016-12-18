@@ -148,7 +148,7 @@ public class ProcessManagementTest extends ComponentTest {
         .processDefinitionName("BPMN API Test Process").latestVersion() // we are only interested in the latest version
         .singleResult();
 
-    // we onlywant the finished process instances
+    // we only want the finished process instances
     List<HistoricProcessInstance> processInstances = this.processEngine.getHistoryService()
         .createHistoricProcessInstanceQuery().processDefinitionId(myProcessDefinition.getId()).finished().list();
 
@@ -186,7 +186,6 @@ public class ProcessManagementTest extends ComponentTest {
         Bpmn.createExecutableProcess("testprocess").name("BPMN API Test Process").startEvent().name("Event received")
             .userTask().id("UT_assignApprover").name("Assign Approver").camundaAssignee("demo").endEvent().done();
 
-    //
     // deploy process model
     this.processEngine.getRepositoryService().createDeployment().addModelInstance("testprocess.bpmn", modelInstance)
         .deploy();
