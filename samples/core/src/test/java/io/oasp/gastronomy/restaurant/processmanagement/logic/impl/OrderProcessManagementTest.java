@@ -320,37 +320,50 @@ public class OrderProcessManagementTest extends ComponentTest {
     // try to mark an order as prepared before it has been accepted
     this.orderProcessmanagement.updateOrderPrepared(processInstance);
 
-    // check that process is still waiting at the previous task
-    ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
+    // check that process has not passed the tasks "Accept Order" and "Update Prepared Order"
+    ProcessEngineTests.assertThat(processInstance).hasNotPassed(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName(),
+        OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+    // Alternatively check that process is still waiting at the previous task
+    // ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_ACCEPTORDER.getTaskName());
 
     this.orderProcessmanagement.acceptOrder(processInstance);
 
     // try to mark an order as served before it has been prepared
     this.orderProcessmanagement.updateOrderServed(processInstance);
-    // check that process is still waiting at the previous task
-    ProcessEngineTests.assertThat(processInstance)
-        .isWaitingAt(OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName());
+
+    // check that process has not passed the tasks "Update Prepared Order" and "Update Served Order"
+    ProcessEngineTests.assertThat(processInstance).hasNotPassed(
+        OrderProcessTasks.USERTASK_UPDATEPREPAREDORDER.getTaskName(),
+        OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
 
     this.orderProcessmanagement.updateOrderPrepared(processInstance);
 
     // try to confirm the payment before the order has been served
     this.orderProcessmanagement.confirmPayment(processInstance);
-    // check that process is still waiting at the previous task
-    ProcessEngineTests.assertThat(processInstance)
-        .isWaitingAt(OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName());
+
+    // check that process has not passed the tasks "Update Served Order"and "Confirm Payment"
+    ProcessEngineTests.assertThat(processInstance).hasNotPassed(
+        OrderProcessTasks.USERTASK_UPDATESERVEDORDER.getTaskName(),
+        OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
 
     this.orderProcessmanagement.updateOrderServed(processInstance);
     this.orderProcessmanagement.handleBillRequest(processInstance);
 
     // try to close an order before the order has been payed
     this.orderProcessmanagement.closeOrder(processInstance);
-    // check that process is still waiting at the previous task
-    ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName());
+
+    // check that process has not passed the tasks "Confirm Payment" and "Close Order"
+    ProcessEngineTests.assertThat(processInstance).hasNotPassed(OrderProcessTasks.USERTASK_CONFIRMPAYMENT.getTaskName(),
+        OrderProcessTasks.USERTASK_CLOSEORDER.getTaskName());
+
     this.orderProcessmanagement.confirmPayment(processInstance);
 
-    // check that process is now waiting to be closed
+    // check that process is now waiting for being closed
     ProcessEngineTests.assertThat(processInstance).isWaitingAt(OrderProcessTasks.USERTASK_CLOSEORDER.getTaskName());
+
     this.orderProcessmanagement.closeOrder(processInstance);
+
     // check that process is ended
     ProcessEngineTests.assertThat(processInstance).isEnded();
 

@@ -262,8 +262,8 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
   }
 
   /**
-   * This will return an active task of the given task name for the given process instance. It will return null if the
-   * task has already been completed (or not yet been created)
+   * This will check if a given task of a process has already been finished . It will return true if the task has
+   * already been completed
    *
    * @param processInstanceId
    * @param taskName
@@ -271,7 +271,7 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
    */
   public boolean checkPreviousTaskIsComplete(String processInstanceId, String taskName) {
 
-    boolean isCompleted = false;
+    boolean isComplete = false;
     // Task task = this.processEngine.getTaskService().createTaskQuery().processInstanceId(processInstanceId)
     // .taskDefinitionKey(taskName).active().singleResult();
 
@@ -283,11 +283,11 @@ public class OrderProcessmanagementImpl extends ProcessmanagementImpl {
     for (HistoricTaskInstance histTaskInst : finishedTasks) {
       String histName = histTaskInst.getTaskDefinitionKey();
       if (histName.equals(taskName)) {
-        isCompleted = true;
+        isComplete = true;
       }
     }
 
-    return isCompleted;
+    return isComplete;
   }
 
 }
